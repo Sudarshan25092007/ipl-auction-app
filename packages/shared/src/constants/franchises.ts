@@ -27,16 +27,16 @@ export interface FranchiseMeta {
  * This prevents any code from accidentally mutating franchise data.
  */
 export const FRANCHISES: readonly FranchiseMeta[] = [
-  { name: 'Mumbai Indians',              abbreviation: 'MI',   primaryColor: '#005DA0', secondaryColor: '#D4AF37' },
-  { name: 'Chennai Super Kings',         abbreviation: 'CSK',  primaryColor: '#FFFF00', secondaryColor: '#0081E9' },
-  { name: 'Royal Challengers Bengaluru', abbreviation: 'RCB',  primaryColor: '#EC1C24', secondaryColor: '#000000' },
-  { name: 'Kolkata Knight Riders',       abbreviation: 'KKR',  primaryColor: '#3A225D', secondaryColor: '#B3A123' },
-  { name: 'Sunrisers Hyderabad',         abbreviation: 'SRH',  primaryColor: '#F7A721', secondaryColor: '#E8461B' },
-  { name: 'Delhi Capitals',              abbreviation: 'DC',   primaryColor: '#0078BC', secondaryColor: '#EF1C25' },
-  { name: 'Rajasthan Royals',            abbreviation: 'RR',   primaryColor: '#EA1A85', secondaryColor: '#254AA5' },
-  { name: 'Punjab Kings',               abbreviation: 'PBKS', primaryColor: '#ED1B24', secondaryColor: '#A7A9AC' },
-  { name: 'Lucknow Super Giants',        abbreviation: 'LSG',  primaryColor: '#A0E6FF', secondaryColor: '#0057A8' },
-  { name: 'Gujarat Titans',             abbreviation: 'GT',   primaryColor: '#1C1C1C', secondaryColor: '#AEC6CF' },
+  { name: 'Mumbai Indians', abbreviation: 'MI', primaryColor: '#0031d7ff', secondaryColor: '#D4AF37' },
+  { name: 'Chennai Super Kings', abbreviation: 'CSK', primaryColor: '#f6ff00ff', secondaryColor: '#0081E9' },
+  { name: 'Royal Challengers Bengaluru', abbreviation: 'RCB', primaryColor: '#f7030bff', secondaryColor: '#000000' },
+  { name: 'Kolkata Knight Riders', abbreviation: 'KKR', primaryColor: '#7a47c8ff', secondaryColor: '#B3A123' },
+  { name: 'Sunrisers Hyderabad', abbreviation: 'SRH', primaryColor: '#ff4800ff', secondaryColor: '#E8461B' },
+  { name: 'Delhi Capitals', abbreviation: 'DC', primaryColor: '#0590e1ff', secondaryColor: '#EF1C25' },
+  { name: 'Rajasthan Royals', abbreviation: 'RR', primaryColor: '#EA1A85', secondaryColor: '#254AA5' },
+  { name: 'Punjab Kings', abbreviation: 'PBKS', primaryColor: '#ED1B24', secondaryColor: '#A7A9AC' },
+  { name: 'Lucknow Super Giants', abbreviation: 'LSG', primaryColor: '#ff4000ff', secondaryColor: '#0057A8' },
+  { name: 'Gujarat Titans', abbreviation: 'GT', primaryColor: '#120087ff', secondaryColor: '#AEC6CF' },
 ] as const;
 
 /**
