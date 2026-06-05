@@ -1,0 +1,18 @@
+{
+  "name": "@ipl-auction/database",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "migrate": "ts-node src/migrate.ts",
+    "seed": "ts-node seeds/seedPlayers.ts"
+  },
+  "devDependencies": {
+    "@ipl-auction/config": "workspace:*",
+    "typescript": "^5.4.0",
+    "ts-node": "^10.9.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "pg": "^8.11.0"
+  }
+}

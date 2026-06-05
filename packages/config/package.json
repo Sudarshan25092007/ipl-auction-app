@@ -1,0 +1,6 @@
+{
+  "name": "@ipl-auction/config",
+  "version": "0.0.1",
+  "private": true,
+  "files": ["tsconfig", "eslint-config"]
+}

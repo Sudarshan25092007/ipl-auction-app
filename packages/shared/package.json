@@ -1,0 +1,14 @@
+{
+  "name": "@ipl-auction/shared",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@ipl-auction/config": "workspace:*",
+    "typescript": "^5.4.0"
+  }
+}
