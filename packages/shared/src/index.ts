@@ -16,6 +16,9 @@
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type { Player, PlayerRole, PlayerNationality, PlayerCategory } from './types/player.types';
 
+// Auth types — JWT payload contract shared between backend (signing) and frontend (decoding)
+export type { JwtPayload, AuthenticatedUser } from './types/auth.types';
+
 export type {
   FranchiseName,
   RoomStatus,
