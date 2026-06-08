@@ -30,6 +30,7 @@ import cors from 'cors';
 import 'dotenv/config';
 
 import { authRouter } from './routes/auth';
+import { roomsRouter } from './routes/rooms';
 
 const app: Express = express();
 
@@ -50,8 +51,8 @@ app.use(cors({
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.use('/auth', authRouter);
-// Phase 3 will add: app.use('/rooms', jwtAuth, roomsRouter);
-// Phase 3 will add: app.use('/players', jwtAuth, playersRouter);
+app.use('/rooms', roomsRouter);  // jwtAuth is applied inside roomsRouter
+// Phase 4 will add: app.use('/players', jwtAuth, playersRouter);
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
 // Used by Railway's health check probe and load balancers.

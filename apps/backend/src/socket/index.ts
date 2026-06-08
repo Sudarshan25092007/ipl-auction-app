@@ -27,6 +27,8 @@
 import { Server } from 'socket.io';
 import type { Server as HttpServer } from 'http';
 import { socketAuthMiddleware, type AuthenticatedSocket } from './middleware/socketAuth';
+import { registerRoomHandlers } from './handlers/roomHandler';
+import { registerDisconnectHandler } from './handlers/disconnectHandler';
 
 export function initSocketServer(httpServer: HttpServer): Server {
   const io = new Server(httpServer, {
@@ -50,13 +52,13 @@ export function initSocketServer(httpServer: HttpServer): Server {
 
     console.info(`[Socket] Connected: ${socket.id} | user: ${username} (${id})`);
 
-    // ── Phase 3 will add: registerRoomHandlers(io, authedSocket)
-    // ── Phase 4 will add: registerAuctionHandlers(io, authedSocket)
+    // ── Phase 3: Room lifecycle handlers (join, franchise_select, start_auction)
+    registerRoomHandlers(io, authedSocket);
 
-    socket.on('disconnect', (reason) => {
-      console.info(`[Socket] Disconnected: ${socket.id} | reason: ${reason}`);
-      // ── Phase 3 will add: handleDisconnect(io, authedSocket)
-    });
+    // ── Phase 3: Disconnect / presence handler
+    registerDisconnectHandler(io, authedSocket);
+
+    // ── Phase 4 will add: registerAuctionHandlers(io, authedSocket)
 
     // Forward auth errors to client (visible in browser devtools)
     socket.on('error', (err) => {
