@@ -50,7 +50,7 @@ import {
   allMembersHaveFranchise,
   updateRoomStatus,
 } from '../../db/queries/rooms';
-import { initializeQueue } from '../../services/queueManager';
+import { getAuctionEngine } from '../../services/auctionEngine';
 import { redis } from '../../redis/client';
 import { REDIS_KEYS } from '../../redis/keys';
 
@@ -224,16 +224,23 @@ export function registerRoomHandlers(io: Server, socket: AuthenticatedSocket): v
       // Transition room to active
       await updateRoomStatus(room.id, 'active');
 
-      // Initialize the auction queue (Phase 3 stub — full implementation in Phase 4)
-      await initializeQueue(room.id);
-
-      // Notify all participants that the auction is starting
+      // Notify all participants that the auction is starting (3s countdown)
       io.to(roomCode).emit('room:auction_starting', {
         roomCode,
         message: 'The auction is starting in 3 seconds!',
       });
 
-      console.info(`[Room] Auction started in room ${roomCode} by host ${username}`);
+      // Brief countdown pause before the engine fires
+      await new Promise((resolve) => setTimeout(resolve, 3_000));
+
+      // Start the AuctionEngine — initializes queue, franchise states, fires first player_up
+      const engine = getAuctionEngine(room.id, io);
+      engine.startAuction().catch((err) => {
+        console.error(`[RoomHandler] AuctionEngine.startAuction failed for room ${roomCode}:`, err);
+        io.to(roomCode).emit('room:error', { message: 'Failed to start auction engine. Please try again.' });
+      });
+
+      console.info(`[Room] Auction engine started in room ${roomCode} by host ${username}`);
     } catch (err) {
       console.error('[RoomHandler] start_auction error:', err);
       socket.emit('room:error', { message: 'Failed to start auction.' });
