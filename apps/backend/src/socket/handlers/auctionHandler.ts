@@ -56,7 +56,7 @@ import { getRoomByCode } from '../../db/queries/rooms';
 import { insertBid } from '../../db/queries/auction';
 
 export function registerAuctionHandlers(io: Server, socket: AuthenticatedSocket): void {
-  const { id: userId, username } = socket.data.user;
+  const { username } = socket.data.user;
 
   // ─── auction:bid_placed ─────────────────────────────────────────────────────
   socket.on(SOCKET_EVENTS.BID_PLACED, async (payload: BidPlacedPayload) => {
@@ -260,4 +260,82 @@ export function registerAuctionHandlers(io: Server, socket: AuthenticatedSocket)
       console.error('[AuctionHandler] State sync error:', err);
     }
   });
+
+  // ─── host:control ───────────────────────────────────────────────────────────
+  socket.on('host:control', async (payload: { roomCode: string; action: 'pause' | 'resume' | 'skip' | 'extend' }) => {
+    try {
+      const { roomCode, action } = payload;
+      const room = await getRoomByCode(roomCode);
+      if (!room) return;
+
+      // Verify user is the host of the room
+      if (room.host_user_id !== socket.data.user.id) {
+        socket.emit('host:control_error', { message: 'Only the host can control the auction.' });
+        return;
+      }
+
+      const roomId = room.id;
+      const engine = getAuctionEngine(roomId, io);
+      const timerService = getTimerService(io);
+
+      if (action === 'pause') {
+        const remaining = await timerService.getRemainingSeconds(roomId);
+        if (remaining > 0) {
+          timerService.clearTimer(roomId);
+          await redis.set(REDIS_KEYS.timerDeadline(roomId) + ':paused', remaining.toString());
+          await redis.set(REDIS_KEYS.auctionState(roomId), 'paused');
+          io.to(roomCode).emit(SOCKET_EVENTS.TIMER_TICK, { roomId, secondsLeft: remaining });
+          io.to(roomCode).emit('auction:paused', { secondsLeft: remaining });
+          console.info(`[HostControl] Auction paused by host for room ${roomCode}`);
+        }
+      } else if (action === 'resume') {
+        const pausedStr = await redis.get(REDIS_KEYS.timerDeadline(roomId) + ':paused');
+        const remaining = pausedStr ? parseInt(pausedStr, 10) : 0;
+        if (remaining > 0) {
+          await redis.del(REDIS_KEYS.timerDeadline(roomId) + ':paused');
+          await redis.set(REDIS_KEYS.auctionState(roomId), 'bidding');
+          io.to(roomCode).emit('auction:resumed', { secondsLeft: remaining });
+          
+          await timerService.startTimer(roomId, remaining, async () => {
+            const { getNextPlayer } = await import('../../services/queueManager');
+            const entry = await getNextPlayer(roomId);
+            if (entry) {
+              await engine.handleTimerExpiry(entry);
+            }
+          });
+          console.info(`[HostControl] Auction resumed by host for room ${roomCode}`);
+        }
+      } else if (action === 'skip') {
+        // Stop timer
+        timerService.clearTimer(roomId);
+        await redis.del(REDIS_KEYS.timerDeadline(roomId));
+        await redis.del(REDIS_KEYS.timerDeadline(roomId) + ':paused');
+        
+        const { getNextPlayer } = await import('../../services/queueManager');
+        const entry = await getNextPlayer(roomId);
+        if (entry) {
+          await engine.processPlayerUnsold(entry);
+          console.info(`[HostControl] Player skipped by host for room ${roomCode}`);
+        }
+      } else if (action === 'extend') {
+        const remaining = await timerService.getRemainingSeconds(roomId);
+        const newDuration = remaining + 30;
+        
+        io.to(roomCode).emit(SOCKET_EVENTS.TIMER_TICK, { roomId, secondsLeft: newDuration });
+        io.to(roomCode).emit('auction:extended', { secondsLeft: newDuration });
+        
+        await timerService.startTimer(roomId, newDuration, async () => {
+          const { getNextPlayer } = await import('../../services/queueManager');
+          const entry = await getNextPlayer(roomId);
+          if (entry) {
+            await engine.handleTimerExpiry(entry);
+          }
+        });
+        console.info(`[HostControl] Timer extended (+30s) by host for room ${roomCode}`);
+      }
+    } catch (err) {
+      console.error('[HostControl] Error in host:control:', err);
+    }
+  });
 }
+

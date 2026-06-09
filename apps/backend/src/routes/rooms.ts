@@ -30,7 +30,7 @@ import {
   getMembersForRoom,
   isRoomMember,
 } from '../db/queries/rooms';
-import type { LobbyParticipant } from '@ipl-auction/shared';
+import type { LobbyParticipant, Player } from '@ipl-auction/shared';
 
 export const roomsRouter: ExpressRouter = Router();
 
@@ -151,3 +151,57 @@ roomsRouter.get('/:code', async (req, res) => {
     res.status(500).json({ error: 'Failed to load room data.' });
   }
 });
+
+// ─── GET /rooms/:code/squads — Get all squads for a room ──────────────────────
+roomsRouter.get('/:code/squads', async (req, res) => {
+  try {
+    const userId = req.user!.sub;
+    const { code } = req.params;
+
+    const room = await getRoomByCode(code);
+    if (!room) {
+      res.status(404).json({ error: 'Room not found.' });
+      return;
+    }
+
+    const isMember = await isRoomMember(room.id, userId);
+    if (!isMember) {
+      res.status(403).json({ error: 'You are not a member of this room.' });
+      return;
+    }
+
+    const { getSquadPlayersForRoom } = await import('../db/queries/rooms');
+    const records = await getSquadPlayersForRoom(room.id);
+
+    // Group records by franchise
+    interface SquadPlayerItem {
+      pricePaidLakhs: number;
+      player: Player;
+    }
+    const squads = {} as Record<string, SquadPlayerItem[]>;
+    records.forEach((rec) => {
+      if (!squads[rec.franchise]) {
+        squads[rec.franchise] = [];
+      }
+      squads[rec.franchise].push({
+        pricePaidLakhs: rec.price_paid_lakhs,
+        player: {
+          id: rec.player_id,
+          name: rec.player_name,
+          category: rec.category,
+          role: rec.role as Player['role'],
+          nationality: rec.nationality as Player['nationality'],
+          isMarquee: rec.is_marquee,
+          isCapped: rec.is_capped,
+          basePriceLakhs: rec.base_price_lakhs,
+        },
+      });
+    });
+
+    res.json({ squads });
+  } catch (err) {
+    console.error('[Rooms] Get squads error:', err);
+    res.status(500).json({ error: 'Failed to load squads.' });
+  }
+});
+

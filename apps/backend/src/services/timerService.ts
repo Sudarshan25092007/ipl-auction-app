@@ -35,7 +35,7 @@
  *   from auction:timer_tick events — they display what the server tells them.
  */
 import type { Server } from 'socket.io';
-import { SOCKET_EVENTS, AUCTION_TIMER_SECONDS, BID_RESET_TIMER_SECONDS } from '@ipl-auction/shared';
+import { SOCKET_EVENTS, BID_RESET_TIMER_SECONDS } from '@ipl-auction/shared';
 import { redis } from '../redis/client';
 import { REDIS_KEYS } from '../redis/keys';
 

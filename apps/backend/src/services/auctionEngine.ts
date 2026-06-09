@@ -39,7 +39,7 @@
  */
 import type { Server } from 'socket.io';
 import { SOCKET_EVENTS, SOLD_PAUSE_MS } from '@ipl-auction/shared';
-import type { FranchiseName, Player } from '@ipl-auction/shared';
+import type { FranchiseName } from '@ipl-auction/shared';
 import { redis } from '../redis/client';
 import { REDIS_KEYS } from '../redis/keys';
 import { getTimerService } from './timerService';

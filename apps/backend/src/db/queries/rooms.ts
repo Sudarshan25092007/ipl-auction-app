@@ -230,6 +230,33 @@ export async function allMembersHaveFranchise(roomId: string): Promise<boolean> 
   return parseInt(result.rows[0]?.unselected ?? '0', 10) === 0;
 }
 
+export interface SquadPlayerRecord {
+  franchise: string;
+  price_paid_lakhs: number;
+  player_id: string;
+  player_name: string;
+  category: string;
+  role: string;
+  nationality: string;
+  is_marquee: boolean;
+  is_capped: boolean;
+  base_price_lakhs: number;
+}
+
+export async function getSquadPlayersForRoom(roomId: string): Promise<SquadPlayerRecord[]> {
+  const result = await pool.query<SquadPlayerRecord>(
+    `SELECT rm.franchise, sp.price_paid_lakhs, p.id AS player_id, p.name AS player_name,
+            p.category, p.role, p.nationality, p.is_marquee, p.is_capped, p.base_price_lakhs
+     FROM squad_players sp
+     JOIN room_members rm ON sp.room_member_id = rm.id
+     JOIN players p ON sp.player_id = p.id
+     WHERE rm.room_id = $1
+     ORDER BY sp.acquired_at ASC`,
+    [roomId]
+  );
+  return result.rows;
+}
+
 /** Type guard for PostgreSQL errors */
 function isPostgresError(err: unknown): err is { code: string; message: string } {
   return typeof err === 'object' && err !== null && 'code' in err;

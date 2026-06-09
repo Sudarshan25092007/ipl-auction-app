@@ -13,7 +13,8 @@
     "next": "16.2.7",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "socket.io-client": "^4.7.0"
+    "socket.io-client": "^4.7.0",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@ipl-auction/config": "workspace:*",
