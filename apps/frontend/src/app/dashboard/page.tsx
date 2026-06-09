@@ -10,7 +10,7 @@
  * On success: redirect to /room/[roomCode]/lobby.
  * The lobby page then handles the socket connection and franchise selection redirect.
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { fetchApi, ApiError } from '@/lib/api';
@@ -30,8 +30,15 @@ export default function DashboardPage() {
   const [isJoining, setIsJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
 
+  // Redirect to login if not authenticated (using useEffect to avoid render-time side effects)
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isLoading, router]);
+
   if (isLoading) return <LoadingSpinner message="Loading..." />;
-  if (!user) { router.push('/login'); return null; }
+  if (!user) return null;
 
   async function handleJoin(e: React.FormEvent) {
     e.preventDefault();

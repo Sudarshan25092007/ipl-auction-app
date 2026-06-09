@@ -23,7 +23,7 @@
  *   need a live Redis server.
  */
 import Redis from 'ioredis';
-import 'dotenv/config';
+import '../config/dotenv';
 
 if (!process.env.REDIS_URL) {
   console.warn('[Redis] REDIS_URL not set — Redis features (presence, locks, hot state) will fail.');

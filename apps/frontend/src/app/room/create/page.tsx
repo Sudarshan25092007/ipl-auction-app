@@ -16,7 +16,7 @@
  *   The API uses /rooms (plural, REST convention).
  *   The UI uses /room (singular, user-facing).
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { fetchApi, ApiError } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
@@ -34,11 +34,15 @@ export default function CreateRoomPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Redirect to login if not authenticated (using useEffect to avoid render-time side effects)
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push('/login');
+    }
+  }, [isAuthenticated, isLoading, router]);
+
   if (isLoading) return <LoadingSpinner message="Checking session..." />;
-  if (!isAuthenticated) {
-    router.push('/login');
-    return null;
-  }
+  if (!isAuthenticated) return null;
 
   async function handleCreate() {
     setError(null);

@@ -97,8 +97,15 @@ export default function FranchisePage({
     [socket, roomCode, isPending]
   );
 
+  // Redirect to login if not authenticated (using useEffect to avoid render-time side effects)
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
+
   if (authLoading) return <LoadingSpinner message="Checking session..." />;
-  if (!user) { router.push('/login'); return null; }
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 p-4 md:p-8">

@@ -2,6 +2,7 @@
   "name": "@ipl-auction/backend",
   "version": "0.0.1",
   "private": true,
+  "type": "commonjs",
   "scripts": {
     "dev": "nodemon --watch src --ext ts --exec ts-node src/server.ts",
     "build": "tsc",

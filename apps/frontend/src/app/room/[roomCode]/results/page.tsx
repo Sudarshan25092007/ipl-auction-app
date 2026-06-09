@@ -68,11 +68,15 @@ export default function ResultsPage({
     loadResultsData();
   }, [roomCode, user]);
 
+  // Redirect to login if not authenticated (avoid render-time side effects)
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
+
   if (authLoading || loading) return <LoadingSpinner message="Loading final rosters..." />;
-  if (!user) {
-    router.push('/login');
-    return null;
-  }
+  if (!user) return null;
 
   // franchises list
   const franchises: FranchiseName[] = [

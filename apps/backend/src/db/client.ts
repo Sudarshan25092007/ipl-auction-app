@@ -24,7 +24,7 @@
  *   Without this, queries could hang indefinitely under load.
  */
 import { Pool } from 'pg';
-import 'dotenv/config';
+import '../config/dotenv';
 
 if (!process.env.DATABASE_URL) {
   throw new Error(

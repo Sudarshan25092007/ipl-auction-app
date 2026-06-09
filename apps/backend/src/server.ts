@@ -21,7 +21,7 @@
  *   With this: in-flight requests complete before the process exits.
  */
 import http from 'http';
-import 'dotenv/config';
+import './config/dotenv';
 
 import app from './app';
 import { initSocketServer } from './socket';

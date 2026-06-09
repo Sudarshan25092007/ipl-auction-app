@@ -129,8 +129,15 @@ export default function LobbyPage({
     socket.emit(SOCKET_EVENTS.START_AUCTION, { roomCode });
   }, [socket, roomCode]);
 
+  // ── Redirect to login if not authenticated (avoid render-time side effects) ─
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
+
   if (authLoading || isPageLoading) return <LoadingSpinner message="Loading lobby..." />;
-  if (!user) { router.push('/login'); return null; }
+  if (!user) return null;
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 flex items-center justify-center p-4">

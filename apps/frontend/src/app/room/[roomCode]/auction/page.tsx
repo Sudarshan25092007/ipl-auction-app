@@ -136,12 +136,16 @@ export default function AuctionPage({
     socket.emit('host:control', { roomCode, action });
   };
 
+  // Redirect to login if not authenticated (avoid render-time side effects)
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
+
   // Auth Redirects
   if (authLoading) return <LoadingSpinner message="Validating connection..." />;
-  if (!user) {
-    router.push('/login');
-    return null;
-  }
+  if (!user) return null;
 
   // List of franchises for Tab selection
   const franchises: FranchiseName[] = [
