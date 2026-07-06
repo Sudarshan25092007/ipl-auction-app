@@ -96,7 +96,9 @@ export default function LobbyPage({
       setParticipants(payload.participants);
     };
     const onAuctionStarting = () => {
-      router.push(`/room/${roomCode}/franchise`);
+      // Auction has started — go to the live auction board, NOT back to franchise selection.
+      // Franchise selection happens BEFORE the host starts; this event fires AFTER.
+      router.push(`/room/${roomCode}/auction`);
     };
     const onRoomError = (payload: { message: string }) => {
       setError(payload.message);
@@ -154,6 +156,9 @@ export default function LobbyPage({
 
   const isHost = user.sub === lobbyData?.room.hostUserId;
   const allHaveFranchise = participants.length > 0 && participants.every((p) => p.franchise);
+  // Derive current user's participant record to know if THEY have selected a franchise
+  const myParticipant = participants.find((p) => p.userId === user?.sub);
+  const iHaveSelectedFranchise = Boolean(myParticipant?.franchise);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 p-4 md:p-8">
@@ -236,25 +241,40 @@ export default function LobbyPage({
           </div>
         </div>
 
-        {/* CTA */}
-        {isHost ? (
-          <button
-            id="start-auction-btn"
-            onClick={handleStartAuction}
-            disabled={!allHaveFranchise || isStarting || !isConnected}
-            className="w-full py-4 rounded-2xl bg-gradient-to-r from-orange-500 to-yellow-500 text-white font-bold text-lg disabled:opacity-40 disabled:cursor-not-allowed hover:from-orange-600 hover:to-yellow-600 transition-all duration-200 shadow-xl shadow-orange-500/25 flex items-center justify-center gap-2"
-          >
-            {isStarting ? (
-              <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Starting...</>
-            ) : (
-              <>🚀 Start Auction {!allHaveFranchise && `(${participants.filter(p => p.franchise).length}/${participants.length} ready)`}</>
-            )}
-          </button>
-        ) : (
-          <div className="text-center py-4 text-slate-400 text-sm">
-            Waiting for the host to start the auction...
-          </div>
-        )}
+        {/* CTA — two possible states per user */}
+        <div className="space-y-3">
+
+          {/* Step 1 — Franchise Selection (shown to EVERYONE who hasn't picked yet) */}
+          {!iHaveSelectedFranchise && (
+            <button
+              id="select-franchise-btn"
+              onClick={() => router.push(`/room/${roomCode}/franchise`)}
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold text-lg hover:from-purple-600 hover:to-blue-600 transition-all duration-200 shadow-xl shadow-purple-500/25 flex items-center justify-center gap-2 animate-pulse"
+            >
+              🏏 Select Your Franchise
+            </button>
+          )}
+
+          {/* Step 2 — Start Auction (host only, shown after franchise selected) */}
+          {isHost ? (
+            <button
+              id="start-auction-btn"
+              onClick={handleStartAuction}
+              disabled={!allHaveFranchise || isStarting || !isConnected}
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-orange-500 to-yellow-500 text-white font-bold text-lg disabled:opacity-40 disabled:cursor-not-allowed hover:from-orange-600 hover:to-yellow-600 transition-all duration-200 shadow-xl shadow-orange-500/25 flex items-center justify-center gap-2"
+            >
+              {isStarting ? (
+                <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Starting...</>
+              ) : (
+                <>🚀 Start Auction {!allHaveFranchise && `(${participants.filter(p => p.franchise).length}/${participants.length} ready)`}</>
+              )}
+            </button>
+          ) : iHaveSelectedFranchise ? (
+            <div className="text-center py-3 text-slate-400 text-sm bg-white/5 border border-white/10 rounded-2xl">
+              ✅ Franchise selected — waiting for the host to start the auction...
+            </div>
+          ) : null}
+        </div>
       </div>
     </div>
   );
