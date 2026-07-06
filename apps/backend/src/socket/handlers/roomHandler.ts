@@ -113,9 +113,17 @@ export function registerRoomHandlers(io: Server, socket: AuthenticatedSocket): v
       // 4. Store roomCode on socket.data for use in disconnect handler
       socket.data.roomCode = roomCode;
 
-      // 5. Mark user as online in Redis presence hash
-      await redis.hset(REDIS_KEYS.presence(roomCode), userId, '1');
-      await redis.expire(REDIS_KEYS.presence(roomCode), 7_200); // 2 hour TTL
+      // 5. Mark user as online in Redis presence hash.
+      //    CRITICAL: Wrapped in try/catch — presence is a UI nice-to-have (online dot).
+      //    A Redis outage must NEVER block a user from joining the lobby.
+      //    The Socket.IO join (step 3) already succeeded — the user IS in the room.
+      try {
+        await redis.hset(REDIS_KEYS.presence(roomCode), userId, '1');
+        await redis.expire(REDIS_KEYS.presence(roomCode), 7_200); // 2 hour TTL
+      } catch (redisErr) {
+        // Degraded mode: online indicator unavailable, join still succeeds
+        console.warn(`[RoomHandler] Redis presence update failed for ${username} — continuing without presence tracking:`, (redisErr as Error).message);
+      }
 
       // 6. Build updated participant list and broadcast to EVERYONE in the room
       const participants = await buildParticipantList(room.id, room.host_user_id);

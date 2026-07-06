@@ -50,33 +50,34 @@ export function registerDisconnectHandler(io: Server, socket: AuthenticatedSocke
 
     if (!roomCode) return; // User disconnected before joining a room
 
+    // Mark user as offline in Redis presence hash.
+    // Wrapped in try/catch — Redis outage must never throw in the disconnect path.
     try {
-      // Mark user as offline in Redis presence hash (0 = offline)
       await redis.hset(REDIS_KEYS.presence(roomCode), userId, '0');
-
-      // Deferred emit: only announce user_left if still offline after 60s
-      setTimeout(async () => {
-        try {
-          // Check current presence status
-          const presenceValue = await redis.hget(REDIS_KEYS.presence(roomCode), userId);
-
-          // presenceValue === '1' means they reconnected — do nothing
-          if (presenceValue !== '0') return;
-
-          // Still offline after 60s — broadcast to room
-          io.to(roomCode).emit('room:user_left', {
-            userId,
-            username,
-            message: `${username} has left the room.`,
-          });
-
-          console.info(`[Disconnect] ${username} confirmed offline after 60s grace period.`);
-        } catch (err) {
-          console.error('[DisconnectHandler] Delayed user_left error:', err);
-        }
-      }, OFFLINE_GRACE_MS);
-    } catch (err) {
-      console.error('[DisconnectHandler] Disconnect handler error:', err);
+    } catch (redisErr) {
+      console.warn('[DisconnectHandler] Redis presence offline mark failed — skipping:', (redisErr as Error).message);
     }
+
+    // Deferred emit: only announce user_left if still offline after 60s
+    setTimeout(async () => {
+      try {
+        // Check current presence status
+        const presenceValue = await redis.hget(REDIS_KEYS.presence(roomCode), userId);
+
+        // presenceValue === '1' means they reconnected — do nothing
+        if (presenceValue !== '0') return;
+
+        // Still offline after 60s — broadcast to room
+        io.to(roomCode).emit('room:user_left', {
+          userId,
+          username,
+          message: `${username} has left the room.`,
+        });
+
+        console.info(`[Disconnect] ${username} confirmed offline after 60s grace period.`);
+      } catch (err) {
+        console.warn('[DisconnectHandler] Delayed user_left Redis check failed — skipping:', (err as Error).message);
+      }
+    }, OFFLINE_GRACE_MS);
   });
 }
