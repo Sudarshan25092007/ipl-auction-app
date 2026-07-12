@@ -22,6 +22,8 @@
  *   catch (err) { if (err instanceof ApiError && err.status === 409) { ... } }
  */
 
+import type { Player } from '@ipl-auction/shared';
+
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001';
 
@@ -113,4 +115,11 @@ export async function fetchApi<T>(
   }
 
   return response.json() as Promise<T>;
+}
+
+export async function getPlayers(): Promise<{
+  players: Player[];
+  count: number;
+}> {
+  return fetchApi<{ players: Player[]; count: number }>('/api/players');
 }

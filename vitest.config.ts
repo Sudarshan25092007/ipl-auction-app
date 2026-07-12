@@ -11,6 +11,12 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './apps/frontend/src'),
+      react: path.resolve(__dirname, './apps/frontend/node_modules/react'),
+      'react-dom': path.resolve(
+        __dirname,
+        './apps/frontend/node_modules/react-dom'
+      ),
+      next: path.resolve(__dirname, './node_modules/next'),
     },
   },
 });

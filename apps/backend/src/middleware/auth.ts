@@ -30,9 +30,7 @@ import type { JwtPayload, AuthenticatedUser } from '@ipl-auction/shared';
 // Merges `user` field into Express.Request globally — no casting in route handlers
 declare global {
   namespace Express {
-    interface Request {
-      user?: AuthenticatedUser;
-    }
+    interface User extends AuthenticatedUser {}
   }
 }
 

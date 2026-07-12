@@ -22,21 +22,17 @@ describe('Player Seeding Integration Tests', () => {
     await client.end();
   });
 
-  it(
-    'should run seed script and have 250+ players in players table',
-    async () => {
-      // Run the seed script via child process from the project root
-      const rootPath = path.resolve(__dirname, '../');
-      console.log('Running database seed script...');
-      execSync('pnpm --filter @ipl-auction/database run seed', { cwd: rootPath });
+  it('should run seed script and have 250+ players in players table', async () => {
+    // Run the seed script via child process from the project root
+    const rootPath = path.resolve(__dirname, '../');
+    console.log('Running database seed script...');
+    execSync('pnpm --filter @ipl-auction/database run seed', { cwd: rootPath });
 
-      // Query players count in the database
-      const res = await client.query('SELECT COUNT(*) FROM players');
-      const count = parseInt(res.rows[0].count, 10);
-      console.log('Total seeded players count in DB:', count);
+    // Query players count in the database
+    const res = await client.query('SELECT COUNT(*) FROM players');
+    const count = parseInt(res.rows[0].count, 10);
+    console.log('Total seeded players count in DB:', count);
 
-      expect(count).toBeGreaterThanOrEqual(250);
-    },
-    30000
-  );
+    expect(count).toBeGreaterThanOrEqual(250);
+  }, 30000);
 });

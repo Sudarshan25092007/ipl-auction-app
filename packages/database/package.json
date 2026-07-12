@@ -5,7 +5,8 @@
   "type": "commonjs",
   "scripts": {
     "migrate": "ts-node src/migrate.ts",
-    "seed": "ts-node seeds/seedPlayers.ts"
+    "seed": "ts-node seeds/seedPlayers.ts",
+    "verify:seed": "ts-node src/verify_seed.ts"
   },
   "devDependencies": {
     "@ipl-auction/config": "workspace:*",

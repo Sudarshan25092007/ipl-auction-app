@@ -29,8 +29,12 @@ import express, { type Express } from 'express';
 import cors from 'cors';
 import './config/dotenv';
 
+import passport from 'passport';
+
 import { authRouter } from './routes/auth';
 import { roomsRouter } from './routes/rooms';
+import { playersRouter } from './routes/players';
+import { jwtAuth } from './middleware/auth';
 
 const app: Express = express();
 
@@ -52,9 +56,11 @@ app.use(
 );
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
+app.use(passport.initialize());
+
 app.use('/auth', authRouter);
 app.use('/rooms', roomsRouter); // jwtAuth is applied inside roomsRouter
-// Phase 4 will add: app.use('/players', jwtAuth, playersRouter);
+app.use('/api/players', jwtAuth, playersRouter);
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
 // Used by Railway's health check probe and load balancers.

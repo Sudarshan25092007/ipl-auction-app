@@ -293,22 +293,27 @@ npm run db:seed
 
 ### Local Development
 
+This project is organized as a Turborepo monorepo using `pnpm`.
+
 ```bash
 # Install dependencies
-npm install
+pnpm install
 
 # Set up environment variables
+# Copy template and configure DATABASE_URL, REDIS_URL, JWT_SECRET and GOOGLE_ OAuth variables
 cp .env.example .env
-# Edit .env with your local PostgreSQL and Redis credentials
 
-# Run database migrations
-npx prisma migrate dev
+# Run database schema migrations
+pnpm --filter @ipl-auction/database run migrate
 
-# Start development server
-npm run dev
+# Seed database (parses 250+ players from Excel grid)
+pnpm --filter @ipl-auction/database run seed
 
-# In a separate terminal, start Redis if not using Docker
-redis-server
+# Verify seed integrity and view category statistics
+pnpm run verify:seed
+
+# Start development servers (frontend + backend) in parallel
+pnpm run dev
 ```
 
 ### Environment Variables
@@ -460,21 +465,14 @@ Artillery Load Test Results:
 
 ## 🧪 Testing
 
+We use `Vitest` as our test runner. Tests are run at the root workspace.
+
 ```bash
-# Run all tests
-npm test
+# Run all backend and integration tests sequentially
+pnpm run test:backend
 
-# Run unit tests
-npm run test:unit
-
-# Run integration tests (requires Docker)
-npm run test:integration
-
-# Run load test (50 concurrent bids)
-npm run test:load
-
-# Run with coverage
-npm run test:coverage
+# Run test suite in interactive watch mode
+pnpm run test:watch
 ```
 
 ### Test Coverage Targets

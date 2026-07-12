@@ -27,7 +27,7 @@ interface ParsedPlayer {
   basePriceLakhs: number;
 }
 
-function parsePrice(val: any): number {
+export function parsePriceLakhs(val: any): number {
   if (!val) return 20; // Default min base price (20L)
   const str = val.toString().toLowerCase().replace(/\s+/g, '');
   if (str.endsWith('cr')) {
@@ -42,6 +42,41 @@ function parsePrice(val: any): number {
     return num < 10 ? num * 100 : num;
   }
   return 20;
+}
+
+export function deriveRole(category: string): ParsedPlayer['role'] {
+  const catLower = category.toLowerCase();
+  if (catLower.includes('batters') || catLower.includes('batting')) {
+    return 'batter';
+  } else if (
+    catLower.includes('pacers') ||
+    catLower.includes('bowlers') ||
+    catLower.includes('bowler') ||
+    catLower.includes('pacer')
+  ) {
+    return 'pacer';
+  } else if (catLower.includes('spinners') || catLower.includes('spinner')) {
+    return 'spinner';
+  } else if (
+    catLower.includes('allrounders') ||
+    catLower.includes('all rounders') ||
+    catLower.includes('allrounder')
+  ) {
+    return 'allrounder';
+  } else if (catLower.includes('wicket') || catLower.includes('wk')) {
+    return 'wk';
+  }
+  return 'batter';
+}
+
+export function isMarquee(category: string): boolean {
+  const catLower = category.toLowerCase();
+  return catLower.includes('premium') || catLower.includes('marquee');
+}
+
+export function isCapped(category: string): boolean {
+  const catLower = category.toLowerCase();
+  return !catLower.includes('uncapped');
 }
 
 async function seed() {
@@ -129,50 +164,23 @@ async function seed() {
         continue;
       }
 
-      const basePriceLakhs = parsePrice(priceStr);
-
-      // Extract metadata categories
+      const basePriceLakhs = parsePriceLakhs(priceStr);
+      const isMarqueeVal = isMarquee(currentCategory);
+      const isCappedVal = isCapped(currentCategory);
+      const role = deriveRole(currentCategory);
       const catLower = currentCategory.toLowerCase();
-      const isMarquee =
-        catLower.includes('premium') || catLower.includes('marquee');
       const nationality =
         catLower.includes('overseas') || catLower.includes('retired')
           ? 'overseas'
           : 'indian';
-      const isCapped = !catLower.includes('uncapped');
-
-      let role: ParsedPlayer['role'] = 'batter';
-      if (catLower.includes('batters') || catLower.includes('batting')) {
-        role = 'batter';
-      } else if (
-        catLower.includes('pacers') ||
-        catLower.includes('bowlers') ||
-        catLower.includes('bowler') ||
-        catLower.includes('pacer')
-      ) {
-        role = 'pacer';
-      } else if (
-        catLower.includes('spinners') ||
-        catLower.includes('spinner')
-      ) {
-        role = 'spinner';
-      } else if (
-        catLower.includes('allrounders') ||
-        catLower.includes('all rounders') ||
-        catLower.includes('allrounder')
-      ) {
-        role = 'allrounder';
-      } else if (catLower.includes('wicket') || catLower.includes('wk')) {
-        role = 'wk';
-      }
 
       playersToSeed.push({
         name: nameStr,
         category: currentCategory,
         role,
         nationality,
-        isMarquee,
-        isCapped,
+        isMarquee: isMarqueeVal,
+        isCapped: isCappedVal,
         basePriceLakhs,
       });
     }

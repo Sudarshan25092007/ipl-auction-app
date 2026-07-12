@@ -55,7 +55,7 @@ describe('Auth DB Logic Tests', () => {
 
     const match = await bcrypt.compare(
       testPassword,
-      retrievedUser!.password_hash
+      retrievedUser!.password_hash!
     );
     expect(match).toBe(true);
   });

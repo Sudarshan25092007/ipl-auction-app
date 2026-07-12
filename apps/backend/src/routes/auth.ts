@@ -30,10 +30,62 @@
 import { Router, type Router as ExpressRouter } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import passport from 'passport';
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import { nanoid } from 'nanoid';
 import type { JwtPayload } from '@ipl-auction/shared';
-import { findUserByEmail, createUser, isEmailTaken } from '../db/queries/users';
+import {
+  findUserByEmail,
+  createUser,
+  isEmailTaken,
+  type UserRow,
+} from '../db/queries/users';
 
 export const authRouter: ExpressRouter = Router();
+
+// Setup Passport Google Strategy
+const googleClientId = process.env.GOOGLE_CLIENT_ID;
+const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+const googleCallbackUrl = process.env.GOOGLE_CALLBACK_URL;
+
+if (googleClientId && googleClientSecret && googleCallbackUrl) {
+  passport.use(
+    new GoogleStrategy(
+      {
+        clientID: googleClientId,
+        clientSecret: googleClientSecret,
+        callbackURL: googleCallbackUrl,
+      },
+      async (accessToken, refreshToken, profile, done) => {
+        try {
+          const email = profile.emails?.[0]?.value;
+          const displayName = profile.displayName || 'Google User';
+
+          if (!email) {
+            return done(new Error('No email found in Google profile'));
+          }
+
+          // Check if user exists
+          let user = await findUserByEmail(email);
+
+          if (!user) {
+            // Create user with null password_hash and random username suffix
+            const username = `google_${nanoid(6)}`;
+            user = await createUser(email, username, null);
+          }
+
+          return done(null, { ...user, sub: user.id } as Express.User);
+        } catch (err: any) {
+          return done(err);
+        }
+      }
+    )
+  );
+} else {
+  console.warn(
+    '[Passport] Google OAuth environment variables are missing. Google strategy not registered.'
+  );
+}
 
 // Constant-time dummy hash for timing attack prevention.
 // bcryptjs.compare() against this always returns false but takes the same ~4s.
@@ -120,6 +172,11 @@ authRouter.post('/login', async (req, res) => {
     // ─── Find user ────────────────────────────────────────────────────────────
     const user = await findUserByEmail(email);
 
+    if (user && !user.password_hash) {
+      res.status(401).json({ error: 'Use Google login for this account' });
+      return;
+    }
+
     // ─── Timing-safe password check ───────────────────────────────────────────
     // ALWAYS run bcrypt.compare — even if user is null (use DUMMY_HASH).
     // This ensures response time is ~4s regardless of whether the email exists.
@@ -154,6 +211,33 @@ authRouter.post('/login', async (req, res) => {
     res.status(500).json({ error: 'Login failed. Please try again.' });
   }
 });
+
+// ─── GET /auth/google ──────────────────────────────────────────────────────────
+authRouter.get(
+  '/google',
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    session: false,
+  })
+);
+
+// ─── GET /auth/google/callback ──────────────────────────────────────────────────
+authRouter.get(
+  '/google/callback',
+  (req, res, next) => {
+    const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:3000';
+    passport.authenticate('google', {
+      failureRedirect: `${frontendUrl}/login?error=oauth_failed`,
+      session: false,
+    })(req, res, next);
+  },
+  (req, res) => {
+    const user = req.user as Express.User;
+    const token = signJwt(user.sub, user.email, user.username);
+    const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:3000';
+    res.redirect(`${frontendUrl}/auth/callback?token=${token}`);
+  }
+);
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 

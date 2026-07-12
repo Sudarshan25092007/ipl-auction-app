@@ -146,6 +146,30 @@ export default function DashboardPage() {
             </form>
           </div>
         </div>
+
+        {/* View Players Pool Link Card */}
+        <div className="mt-4 bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-yellow-500/30 transition-all group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex gap-4 items-center">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center text-2xl shadow-lg shadow-yellow-500/20 group-hover:scale-110 transition-transform">
+              📊
+            </div>
+            <div>
+              <h2 className="text-white font-bold text-lg">
+                Player Auction Pool
+              </h2>
+              <p className="text-slate-400 text-sm mt-0.5">
+                View base prices, categories, and roles for all 250+ players.
+              </p>
+            </div>
+          </div>
+          <button
+            id="view-players-btn"
+            onClick={() => router.push('/players')}
+            className="px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-semibold text-sm transition-all border border-white/10 group-hover:border-yellow-500/30"
+          >
+            View All Players →
+          </button>
+        </div>
       </div>
     </div>
   );
