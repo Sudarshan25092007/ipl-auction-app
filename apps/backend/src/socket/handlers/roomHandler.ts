@@ -57,7 +57,9 @@ import { REDIS_KEYS } from '../../redis/keys';
 /** Type guard for PostgreSQL 23505 unique violation errors */
 function isUniqueViolation(err: unknown): boolean {
   return (
-    typeof err === 'object' && err !== null && 'code' in err &&
+    typeof err === 'object' &&
+    err !== null &&
+    'code' in err &&
     (err as { code: string }).code === '23505'
   );
 }
@@ -83,7 +85,10 @@ async function buildParticipantList(
  * Register all room-related socket event handlers.
  * Called from socket/index.ts on every new authenticated connection.
  */
-export function registerRoomHandlers(io: Server, socket: AuthenticatedSocket): void {
+export function registerRoomHandlers(
+  io: Server,
+  socket: AuthenticatedSocket
+): void {
   const { id: userId, username } = socket.data.user;
 
   // ─── room:join ─────────────────────────────────────────────────────────────
@@ -102,7 +107,9 @@ export function registerRoomHandlers(io: Server, socket: AuthenticatedSocket): v
       //    (they should have HTTP-joined first via POST /rooms/join)
       const isMember = await isRoomMember(room.id, userId);
       if (!isMember) {
-        socket.emit('room:error', { message: 'You are not a member of this room.' });
+        socket.emit('room:error', {
+          message: 'You are not a member of this room.',
+        });
         return;
       }
 
@@ -122,11 +129,17 @@ export function registerRoomHandlers(io: Server, socket: AuthenticatedSocket): v
         await redis.expire(REDIS_KEYS.presence(roomCode), 7_200); // 2 hour TTL
       } catch (redisErr) {
         // Degraded mode: online indicator unavailable, join still succeeds
-        console.warn(`[RoomHandler] Redis presence update failed for ${username} — continuing without presence tracking:`, (redisErr as Error).message);
+        console.warn(
+          `[RoomHandler] Redis presence update failed for ${username} — continuing without presence tracking:`,
+          (redisErr as Error).message
+        );
       }
 
       // 6. Build updated participant list and broadcast to EVERYONE in the room
-      const participants = await buildParticipantList(room.id, room.host_user_id);
+      const participants = await buildParticipantList(
+        room.id,
+        room.host_user_id
+      );
 
       io.to(roomCode).emit(SOCKET_EVENTS.USER_JOINED, {
         participants,
@@ -142,116 +155,142 @@ export function registerRoomHandlers(io: Server, socket: AuthenticatedSocket): v
   });
 
   // ─── room:franchise_select ─────────────────────────────────────────────────
-  socket.on(SOCKET_EVENTS.SELECT_FRANCHISE, async (payload: SelectFranchisePayload) => {
-    try {
-      const { roomCode, franchise } = payload;
+  socket.on(
+    SOCKET_EVENTS.SELECT_FRANCHISE,
+    async (payload: SelectFranchisePayload) => {
+      try {
+        const { roomCode, franchise } = payload;
 
-      const room = await getRoomByCode(roomCode);
-      if (!room) {
-        socket.emit('room:error', { message: 'Room not found.' });
-        return;
-      }
+        const room = await getRoomByCode(roomCode);
+        if (!room) {
+          socket.emit('room:error', { message: 'Room not found.' });
+          return;
+        }
 
-      // Can only select franchise in lobby
-      if (room.status !== 'lobby') {
-        socket.emit('room:error', { message: 'Franchise selection is only available in the lobby.' });
-        return;
-      }
+        // Can only select franchise in lobby
+        if (room.status !== 'lobby') {
+          socket.emit('room:error', {
+            message: 'Franchise selection is only available in the lobby.',
+          });
+          return;
+        }
 
-      // Attempt atomic franchise claim — may throw 23505 if race condition
-      const claimed = await claimFranchise(room.id, userId, franchise);
+        // Attempt atomic franchise claim — may throw 23505 if race condition
+        const claimed = await claimFranchise(room.id, userId, franchise);
 
-      if (!claimed) {
-        // User already has a franchise — they can't change it
-        socket.emit('room:franchise_claimed_error', {
-          message: 'You have already selected a franchise.',
+        if (!claimed) {
+          // User already has a franchise — they can't change it
+          socket.emit('room:franchise_claimed_error', {
+            message: 'You have already selected a franchise.',
+          });
+          return;
+        }
+
+        // Store franchise on socket.data for disconnect handler
+        socket.data.franchise = franchise;
+
+        // Broadcast updated participant list to the entire room
+        const participants = await buildParticipantList(
+          room.id,
+          room.host_user_id
+        );
+
+        io.to(roomCode).emit(SOCKET_EVENTS.FRANCHISE_CLAIMED, {
+          participants,
+          claimedByUserId: userId,
+          claimedByUsername: username,
+          franchise,
         });
-        return;
+
+        console.info(
+          `[Room] ${username} claimed ${franchise} in room ${roomCode}`
+        );
+      } catch (err) {
+        if (isUniqueViolation(err)) {
+          // SYSTEM CONCEPT — The DB constraint fired: another user claimed this franchise
+          // in the ~1ms between our read and write. Belt-and-suspenders working perfectly.
+          socket.emit('room:franchise_claimed_error', {
+            message:
+              'This franchise was just claimed by another player. Please select another.',
+          });
+          return;
+        }
+        console.error('[RoomHandler] franchise_select error:', err);
+        socket.emit('room:error', { message: 'Failed to claim franchise.' });
       }
-
-      // Store franchise on socket.data for disconnect handler
-      socket.data.franchise = franchise;
-
-      // Broadcast updated participant list to the entire room
-      const participants = await buildParticipantList(room.id, room.host_user_id);
-
-      io.to(roomCode).emit(SOCKET_EVENTS.FRANCHISE_CLAIMED, {
-        participants,
-        claimedByUserId: userId,
-        claimedByUsername: username,
-        franchise,
-      });
-
-      console.info(`[Room] ${username} claimed ${franchise} in room ${roomCode}`);
-    } catch (err) {
-      if (isUniqueViolation(err)) {
-        // SYSTEM CONCEPT — The DB constraint fired: another user claimed this franchise
-        // in the ~1ms between our read and write. Belt-and-suspenders working perfectly.
-        socket.emit('room:franchise_claimed_error', {
-          message: 'This franchise was just claimed by another player. Please select another.',
-        });
-        return;
-      }
-      console.error('[RoomHandler] franchise_select error:', err);
-      socket.emit('room:error', { message: 'Failed to claim franchise.' });
     }
-  });
+  );
 
   // ─── room:start_auction ────────────────────────────────────────────────────
-  socket.on(SOCKET_EVENTS.START_AUCTION, async (payload: StartAuctionPayload) => {
-    try {
-      const { roomCode } = payload;
+  socket.on(
+    SOCKET_EVENTS.START_AUCTION,
+    async (payload: StartAuctionPayload) => {
+      try {
+        const { roomCode } = payload;
 
-      const room = await getRoomByCode(roomCode);
-      if (!room) {
-        socket.emit('room:error', { message: 'Room not found.' });
-        return;
-      }
+        const room = await getRoomByCode(roomCode);
+        if (!room) {
+          socket.emit('room:error', { message: 'Room not found.' });
+          return;
+        }
 
-      // Only the host can start the auction
-      if (room.host_user_id !== userId) {
-        socket.emit('room:error', { message: 'Only the room host can start the auction.' });
-        return;
-      }
+        // Only the host can start the auction
+        if (room.host_user_id !== userId) {
+          socket.emit('room:error', {
+            message: 'Only the room host can start the auction.',
+          });
+          return;
+        }
 
-      // Only from lobby state
-      if (room.status !== 'lobby') {
-        socket.emit('room:error', { message: 'Auction is not in lobby state.' });
-        return;
-      }
+        // Only from lobby state
+        if (room.status !== 'lobby') {
+          socket.emit('room:error', {
+            message: 'Auction is not in lobby state.',
+          });
+          return;
+        }
 
-      // All members must have selected a franchise
-      const allReady = await allMembersHaveFranchise(room.id);
-      if (!allReady) {
-        socket.emit('room:error', {
-          message: 'All participants must select a franchise before the auction can start.',
+        // All members must have selected a franchise
+        const allReady = await allMembersHaveFranchise(room.id);
+        if (!allReady) {
+          socket.emit('room:error', {
+            message:
+              'All participants must select a franchise before the auction can start.',
+          });
+          return;
+        }
+
+        // Transition room to active
+        await updateRoomStatus(room.id, 'active');
+
+        // Notify all participants that the auction is starting (3s countdown)
+        io.to(roomCode).emit('room:auction_starting', {
+          roomCode,
+          message: 'The auction is starting in 3 seconds!',
         });
-        return;
+
+        // Brief countdown pause before the engine fires
+        await new Promise((resolve) => setTimeout(resolve, 3_000));
+
+        // Start the AuctionEngine — initializes queue, franchise states, fires first player_up
+        const engine = getAuctionEngine(room.id, io);
+        engine.startAuction().catch((err) => {
+          console.error(
+            `[RoomHandler] AuctionEngine.startAuction failed for room ${roomCode}:`,
+            err
+          );
+          io.to(roomCode).emit('room:error', {
+            message: 'Failed to start auction engine. Please try again.',
+          });
+        });
+
+        console.info(
+          `[Room] Auction engine started in room ${roomCode} by host ${username}`
+        );
+      } catch (err) {
+        console.error('[RoomHandler] start_auction error:', err);
+        socket.emit('room:error', { message: 'Failed to start auction.' });
       }
-
-      // Transition room to active
-      await updateRoomStatus(room.id, 'active');
-
-      // Notify all participants that the auction is starting (3s countdown)
-      io.to(roomCode).emit('room:auction_starting', {
-        roomCode,
-        message: 'The auction is starting in 3 seconds!',
-      });
-
-      // Brief countdown pause before the engine fires
-      await new Promise((resolve) => setTimeout(resolve, 3_000));
-
-      // Start the AuctionEngine — initializes queue, franchise states, fires first player_up
-      const engine = getAuctionEngine(room.id, io);
-      engine.startAuction().catch((err) => {
-        console.error(`[RoomHandler] AuctionEngine.startAuction failed for room ${roomCode}:`, err);
-        io.to(roomCode).emit('room:error', { message: 'Failed to start auction engine. Please try again.' });
-      });
-
-      console.info(`[Room] Auction engine started in room ${roomCode} by host ${username}`);
-    } catch (err) {
-      console.error('[RoomHandler] start_auction error:', err);
-      socket.emit('room:error', { message: 'Failed to start auction.' });
     }
-  });
+  );
 }

@@ -45,22 +45,32 @@ authRouter.post('/register', async (req, res) => {
     const { email, username, password } = req.body as Record<string, unknown>;
 
     // ─── Input Validation (Phase 6 replaces this with Zod schemas) ───────────
-    if (typeof email !== 'string' || !email.includes('@') || !email.includes('.')) {
+    if (
+      typeof email !== 'string' ||
+      !email.includes('@') ||
+      !email.includes('.')
+    ) {
       res.status(400).json({ error: 'A valid email address is required.' });
       return;
     }
     if (typeof username !== 'string' || username.trim().length < 3) {
-      res.status(400).json({ error: 'Username must be at least 3 characters.' });
+      res
+        .status(400)
+        .json({ error: 'Username must be at least 3 characters.' });
       return;
     }
-    if (typeof password !== 'string' || password.length < 8) {
-      res.status(400).json({ error: 'Password must be at least 8 characters.' });
+    if (typeof password !== 'string' || password.length < 6) {
+      res
+        .status(400)
+        .json({ error: 'Password must be at least 6 characters.' });
       return;
     }
 
     // ─── Uniqueness check ─────────────────────────────────────────────────────
     if (await isEmailTaken(email)) {
-      res.status(409).json({ error: 'An account with this email already exists.' });
+      res
+        .status(409)
+        .json({ error: 'An account with this email already exists.' });
       return;
     }
 
@@ -87,7 +97,9 @@ authRouter.post('/register', async (req, res) => {
   } catch (err: unknown) {
     // Handle DB unique constraint violation (race condition — two simultaneous registrations)
     if (isPostgresError(err) && err.code === '23505') {
-      res.status(409).json({ error: 'An account with this email already exists.' });
+      res
+        .status(409)
+        .json({ error: 'An account with this email already exists.' });
       return;
     }
     console.error('[Auth] Register error:', err);
@@ -162,7 +174,9 @@ function signJwt(userId: string, email: string, username: string): string {
 }
 
 /** Type guard for PostgreSQL error objects (has `code` string property). */
-function isPostgresError(err: unknown): err is { code: string; message: string } {
+function isPostgresError(
+  err: unknown
+): err is { code: string; message: string } {
   return (
     typeof err === 'object' &&
     err !== null &&

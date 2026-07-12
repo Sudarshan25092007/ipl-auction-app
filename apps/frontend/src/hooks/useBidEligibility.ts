@@ -36,12 +36,8 @@ export function getBidIncrement(currentBidLakhs: number): number {
 }
 
 export function useBidEligibility() {
-  const {
-    currentPlayer,
-    currentBidLakhs,
-    myFranchiseState,
-    auctionState,
-  } = useAuctionStore();
+  const { currentPlayer, currentBidLakhs, myFranchiseState, auctionState } =
+    useAuctionStore();
 
   const nextBidAmount = useMemo(() => {
     if (!currentPlayer) return 0;
@@ -80,7 +76,9 @@ export function useBidEligibility() {
     return {
       canBid: validation.valid,
       reason: (validation.reason ?? null) as BidRejectionReason | null,
-      humanMessage: validation.reason ? getBidRejectionMessage(validation.reason) : '',
+      humanMessage: validation.reason
+        ? getBidRejectionMessage(validation.reason)
+        : '',
       nextBidAmount,
     };
   }, [auctionState, currentPlayer, myFranchiseState, nextBidAmount]);

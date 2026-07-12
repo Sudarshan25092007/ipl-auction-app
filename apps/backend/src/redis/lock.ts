@@ -56,7 +56,10 @@ import { redis } from './client';
  * @param ttlMs Maximum time to hold the lock before Redis auto-expires it (deadlock prevention)
  * @returns     A lock token string if acquired, or null if the lock is already held.
  */
-export async function acquireLock(key: string, ttlMs: number): Promise<string | null> {
+export async function acquireLock(
+  key: string,
+  ttlMs: number
+): Promise<string | null> {
   const token = randomUUID();
   const ttlSeconds = Math.ceil(ttlMs / 1000);
 
@@ -94,7 +97,10 @@ const RELEASE_SCRIPT = `
  * @param token The token returned by acquireLock (proves we own the lock)
  * @returns     true if the lock was released, false if it had already expired or was taken by another process
  */
-export async function releaseLock(key: string, token: string): Promise<boolean> {
-  const result = await redis.eval(RELEASE_SCRIPT, 1, key, token) as number;
+export async function releaseLock(
+  key: string,
+  token: string
+): Promise<boolean> {
+  const result = (await redis.eval(RELEASE_SCRIPT, 1, key, token)) as number;
   return result === 1;
 }

@@ -51,7 +51,9 @@ export default function DashboardPage() {
       });
       router.push(`/room/${data.roomCode}/lobby`);
     } catch (err) {
-      setJoinError(err instanceof ApiError ? err.message : 'Failed to join room.');
+      setJoinError(
+        err instanceof ApiError ? err.message : 'Failed to join room.'
+      );
       setIsJoining(false);
     }
   }
@@ -59,7 +61,6 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 p-4 md:p-8">
       <div className="max-w-2xl mx-auto">
-
         {/* Nav */}
         <div className="flex items-center justify-between mb-10">
           <div className="flex items-center gap-3">
@@ -67,7 +68,9 @@ export default function DashboardPage() {
               🏏
             </div>
             <div>
-              <p className="text-white font-semibold text-sm leading-tight">IPL Mock Auction</p>
+              <p className="text-white font-semibold text-sm leading-tight">
+                IPL Mock Auction
+              </p>
               <p className="text-slate-400 text-xs">Welcome, {user.username}</p>
             </div>
           </div>
@@ -82,7 +85,6 @@ export default function DashboardPage() {
 
         {/* Cards */}
         <div className="grid gap-4 sm:grid-cols-2">
-
           {/* Create Room */}
           <div className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-orange-500/30 transition-all group">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-yellow-500 flex items-center justify-center text-2xl mb-4 shadow-lg shadow-orange-500/25 group-hover:scale-110 transition-transform">
@@ -111,7 +113,11 @@ export default function DashboardPage() {
               Enter the 6-character invite code from your host.
             </p>
 
-            <form onSubmit={handleJoin} className="space-y-3" id="join-room-form">
+            <form
+              onSubmit={handleJoin}
+              className="space-y-3"
+              id="join-room-form"
+            >
               <input
                 id="invite-code-input"
                 type="text"
@@ -125,7 +131,9 @@ export default function DashboardPage() {
                 className="w-full px-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 font-mono text-center text-lg tracking-widest uppercase transition"
               />
               {joinError && (
-                <p role="alert" className="text-red-300 text-xs text-center">{joinError}</p>
+                <p role="alert" className="text-red-300 text-xs text-center">
+                  {joinError}
+                </p>
               )}
               <button
                 id="join-room-btn"

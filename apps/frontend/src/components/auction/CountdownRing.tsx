@@ -56,7 +56,10 @@ export function CountdownRing() {
     <div className="flex flex-col items-center justify-center p-4">
       <div className="relative w-36 h-36 flex items-center justify-center">
         {/* SVG Progress Ring */}
-        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+        <svg
+          className="w-full h-full transform -rotate-90"
+          viewBox="0 0 120 120"
+        >
           {/* Background Track */}
           <circle
             className="stroke-white/5"
@@ -82,7 +85,9 @@ export function CountdownRing() {
 
         {/* Center Text */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-          <span className={`text-4xl font-black tracking-tight font-mono ${timerColor.split(' ')[0]}`}>
+          <span
+            className={`text-4xl font-black tracking-tight font-mono ${timerColor.split(' ')[0]}`}
+          >
             {secondsLeft}
           </span>
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mt-0.5">

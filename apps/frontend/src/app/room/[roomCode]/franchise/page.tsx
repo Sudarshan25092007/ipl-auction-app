@@ -110,17 +110,23 @@ export default function FranchisePage({
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 p-4 md:p-8">
       <div className="max-w-4xl mx-auto space-y-6">
-
         {/* Header */}
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-white">Choose Your Franchise</h1>
+          <h1 className="text-3xl font-bold text-white">
+            Choose Your Franchise
+          </h1>
           <p className="text-slate-400 mt-2 text-sm">
-            Select the IPL team you'll manage during the auction. First come, first served.
+            Select the IPL team you'll manage during the auction. First come,
+            first served.
           </p>
           <div className="flex items-center justify-center gap-2 mt-3">
-            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
+            <div
+              className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`}
+            />
             <span className="text-xs text-slate-500">
-              {isConnected ? 'Live — selections update in real-time' : 'Connecting...'}
+              {isConnected
+                ? 'Live — selections update in real-time'
+                : 'Connecting...'}
             </span>
           </div>
         </div>
@@ -150,7 +156,8 @@ export default function FranchisePage({
         {participants.length > 0 && (
           <div className="bg-white/5 border border-white/10 rounded-xl px-5 py-4">
             <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-3">
-              Room Status ({participants.filter(p => p.franchise).length}/{participants.length} selected)
+              Room Status ({participants.filter((p) => p.franchise).length}/
+              {participants.length} selected)
             </p>
             <div className="flex flex-wrap gap-2">
               {participants.map((p) => (
@@ -162,7 +169,9 @@ export default function FranchisePage({
                       : 'bg-white/5 border border-white/10 text-slate-400'
                   }`}
                 >
-                  <div className={`w-1.5 h-1.5 rounded-full ${p.franchise ? 'bg-green-400' : 'bg-amber-400 animate-pulse'}`} />
+                  <div
+                    className={`w-1.5 h-1.5 rounded-full ${p.franchise ? 'bg-green-400' : 'bg-amber-400 animate-pulse'}`}
+                  />
                   {p.username}
                 </div>
               ))}

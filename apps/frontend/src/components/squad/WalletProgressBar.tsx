@@ -15,23 +15,33 @@ interface WalletProgressBarProps {
   walletRemainingLakhs: number;
 }
 
-export function WalletProgressBar({ walletRemainingLakhs }: WalletProgressBarProps) {
+export function WalletProgressBar({
+  walletRemainingLakhs,
+}: WalletProgressBarProps) {
   const percentage = useMemo(() => {
-    return Math.min(100, Math.max(0, (walletRemainingLakhs / WALLET_TOTAL_LAKHS) * 100));
+    return Math.min(
+      100,
+      Math.max(0, (walletRemainingLakhs / WALLET_TOTAL_LAKHS) * 100)
+    );
   }, [walletRemainingLakhs]);
 
   const barColor = useMemo(() => {
-    if (percentage > 50) return 'bg-gradient-to-r from-emerald-500 to-green-500 shadow-green-500/20';
-    if (percentage > 20) return 'bg-gradient-to-r from-amber-500 to-yellow-500 shadow-yellow-500/20';
+    if (percentage > 50)
+      return 'bg-gradient-to-r from-emerald-500 to-green-500 shadow-green-500/20';
+    if (percentage > 20)
+      return 'bg-gradient-to-r from-amber-500 to-yellow-500 shadow-yellow-500/20';
     return 'bg-gradient-to-r from-rose-500 to-red-600 shadow-red-500/20';
   }, [percentage]);
 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between text-xs font-bold">
-        <span className="text-slate-400 uppercase tracking-widest">Salary Cap Wallet</span>
+        <span className="text-slate-400 uppercase tracking-widest">
+          Salary Cap Wallet
+        </span>
         <span className="text-white font-mono text-sm">
-          {formatLakhs(walletRemainingLakhs)} / {formatLakhs(WALLET_TOTAL_LAKHS)}
+          {formatLakhs(walletRemainingLakhs)} /{' '}
+          {formatLakhs(WALLET_TOTAL_LAKHS)}
         </span>
       </div>
 

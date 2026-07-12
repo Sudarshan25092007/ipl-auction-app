@@ -65,11 +65,11 @@ export type RoomStatus = 'lobby' | 'active' | 'completed';
  * The auctionEngine increments this atomically after each player is resolved.
  */
 export interface Room {
-  readonly id: string;              // UUID — Primary Key
-  readonly inviteCode: string;      // CHAR(6) — human-typeable join code
-  readonly hostUserId: string;      // FK → users.id — only host can start auction
-  status: RoomStatus;               // Mutable: changes as auction progresses
-  currentQueuePosition: number;     // Pointer into auction_queue. Starts at 0.
+  readonly id: string; // UUID — Primary Key
+  readonly inviteCode: string; // CHAR(6) — human-typeable join code
+  readonly hostUserId: string; // FK → users.id — only host can start auction
+  status: RoomStatus; // Mutable: changes as auction progresses
+  currentQueuePosition: number; // Pointer into auction_queue. Starts at 0.
   readonly createdAt: Date;
   updatedAt: Date;
 }
@@ -83,12 +83,12 @@ export interface Room {
  * this franchise wins a player. It is the primary balance sheet for bid validation.
  */
 export interface RoomMember {
-  readonly id: string;              // UUID — Primary Key (room_members table)
-  readonly roomId: string;          // FK → rooms.id
-  readonly userId: string;          // FK → users.id
-  readonly username: string;        // Denormalized from users table for display speed
-  franchise: FranchiseName | null;  // null until franchise is selected in lobby
-  walletRemainingLakhs: number;     // Starts at 12000. Mutable — decrements on wins.
+  readonly id: string; // UUID — Primary Key (room_members table)
+  readonly roomId: string; // FK → rooms.id
+  readonly userId: string; // FK → users.id
+  readonly username: string; // Denormalized from users table for display speed
+  franchise: FranchiseName | null; // null until franchise is selected in lobby
+  walletRemainingLakhs: number; // Starts at 12000. Mutable — decrements on wins.
 }
 
 /**

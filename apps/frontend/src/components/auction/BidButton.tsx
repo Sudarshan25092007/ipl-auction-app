@@ -30,7 +30,7 @@ export function BidButton({ onBid }: BidButtonProps) {
   const auctionState = useAuctionStore((state) => state.auctionState);
 
   const { canBid, humanMessage, nextBidAmount } = useBidEligibility();
-  
+
   const [isThrottled, setIsThrottled] = useState(false);
 
   // Check if I am already the highest bidder
@@ -38,7 +38,8 @@ export function BidButton({ onBid }: BidButtonProps) {
     myFranchiseState && currentBidder === myFranchiseState.franchise;
 
   const handleClick = () => {
-    if (!canBid || isHighestBidder || isThrottled || nextBidAmount === 0) return;
+    if (!canBid || isHighestBidder || isThrottled || nextBidAmount === 0)
+      return;
 
     setIsThrottled(true);
     onBid(nextBidAmount);
@@ -65,7 +66,8 @@ export function BidButton({ onBid }: BidButtonProps) {
   } else if (isHighestBidder) {
     buttonText = 'Highest Bidder';
     statusMessage = 'Your franchise holds the highest bid!';
-    borderGlowClass = 'shadow-[0_0_15px_rgba(34,197,94,0.2)] border-green-500/30';
+    borderGlowClass =
+      'shadow-[0_0_15px_rgba(34,197,94,0.2)] border-green-500/30';
   } else if (!canBid && humanMessage) {
     statusMessage = humanMessage;
     borderGlowClass = 'border-red-500/10';
@@ -73,7 +75,8 @@ export function BidButton({ onBid }: BidButtonProps) {
     buttonText = 'Processing...';
   } else {
     // Active bidding state
-    borderGlowClass = 'shadow-[0_0_20px_rgba(6,182,212,0.35)] hover:shadow-[0_0_25px_rgba(6,182,212,0.5)] border-cyan-500/30 hover:border-cyan-400/50';
+    borderGlowClass =
+      'shadow-[0_0_20px_rgba(6,182,212,0.35)] hover:shadow-[0_0_25px_rgba(6,182,212,0.5)] border-cyan-500/30 hover:border-cyan-400/50';
   }
 
   return (
@@ -85,8 +88,8 @@ export function BidButton({ onBid }: BidButtonProps) {
           isDisabled
             ? 'bg-slate-800 border border-slate-700 text-slate-500 cursor-not-allowed shadow-none'
             : isHighestBidder
-            ? 'bg-gradient-to-r from-emerald-500 to-green-600 border border-green-500/40 text-white shadow-lg'
-            : 'bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 border border-cyan-500/40 text-white shadow-lg'
+              ? 'bg-gradient-to-r from-emerald-500 to-green-600 border border-green-500/40 text-white shadow-lg'
+              : 'bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 border border-cyan-500/40 text-white shadow-lg'
         } ${borderGlowClass}`}
       >
         {buttonText}
@@ -98,8 +101,8 @@ export function BidButton({ onBid }: BidButtonProps) {
             isHighestBidder
               ? 'text-green-400 border-green-500/10'
               : !canBid
-              ? 'text-red-400 border-red-500/10'
-              : 'text-slate-400 border-white/5'
+                ? 'text-red-400 border-red-500/10'
+                : 'text-slate-400 border-white/5'
           }`}
         >
           {isHighestBidder ? '✓ ' : '⚠️ '}

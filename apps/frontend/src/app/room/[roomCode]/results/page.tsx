@@ -36,7 +36,9 @@ export default function ResultsPage({
   const { user, isLoading: authLoading } = useAuth();
 
   const [roomCode, setRoomCode] = useState<string>('');
-  const [squads, setSquads] = useState<Record<FranchiseName, RosterPlayer[]>>({} as Record<FranchiseName, RosterPlayer[]>);
+  const [squads, setSquads] = useState<Record<FranchiseName, RosterPlayer[]>>(
+    {} as Record<FranchiseName, RosterPlayer[]>
+  );
   const [loading, setLoading] = useState(true);
 
   // Unwrap params
@@ -75,7 +77,8 @@ export default function ResultsPage({
     }
   }, [user, authLoading, router]);
 
-  if (authLoading || loading) return <LoadingSpinner message="Loading final rosters..." />;
+  if (authLoading || loading)
+    return <LoadingSpinner message="Loading final rosters..." />;
   if (!user) return null;
 
   // franchises list
@@ -101,7 +104,8 @@ export default function ResultsPage({
             🏆 Final Roster & Draft Results
           </h1>
           <span className="px-3 py-1 rounded-full text-xs font-bold bg-white/5 border border-white/10 text-slate-400">
-            Room Code: <span className="font-mono text-cyan-400">{roomCode}</span>
+            Room Code:{' '}
+            <span className="font-mono text-cyan-400">{roomCode}</span>
           </span>
         </div>
 
@@ -117,9 +121,12 @@ export default function ResultsPage({
       <main className="flex-grow p-6 space-y-8 max-w-7xl mx-auto w-full">
         {/* Results Page Info */}
         <div className="text-center max-w-md mx-auto space-y-2">
-          <h2 className="text-3xl font-extrabold text-white">Draft Roster Summaries</h2>
+          <h2 className="text-3xl font-extrabold text-white">
+            Draft Roster Summaries
+          </h2>
           <p className="text-sm text-slate-500">
-            All 10 IPL franchise squads, total cash spent, and full player acquisitions.
+            All 10 IPL franchise squads, total cash spent, and full player
+            acquisitions.
           </p>
         </div>
 
@@ -128,9 +135,12 @@ export default function ResultsPage({
           {franchises.map((name) => {
             const roster = squads[name] || [];
             const meta = FRANCHISE_MAP[name];
-            
+
             // Spend math
-            const totalSpend = roster.reduce((sum, current) => sum + current.pricePaidLakhs, 0);
+            const totalSpend = roster.reduce(
+              (sum, current) => sum + current.pricePaidLakhs,
+              0
+            );
             const remainingWallet = 12000 - totalSpend;
 
             return (
@@ -147,7 +157,9 @@ export default function ResultsPage({
                     {meta?.abbreviation ?? 'T'}
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-white leading-tight">{name}</h3>
+                    <h3 className="text-sm font-bold text-white leading-tight">
+                      {name}
+                    </h3>
                     <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">
                       Roster count: {roster.length} / 25
                     </p>
@@ -157,13 +169,17 @@ export default function ResultsPage({
                 {/* Spend Overview */}
                 <div className="grid grid-cols-2 gap-2 bg-black/20 border border-white/5 rounded-2xl p-3 mb-4 text-center shrink-0">
                   <div>
-                    <p className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Total Spent</p>
+                    <p className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">
+                      Total Spent
+                    </p>
                     <p className="text-sm font-extrabold text-slate-200 mt-0.5 font-mono">
                       {formatLakhs(totalSpend)}
                     </p>
                   </div>
                   <div>
-                    <p className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Wallet Left</p>
+                    <p className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">
+                      Wallet Left
+                    </p>
                     <p className="text-sm font-black text-teal-400 mt-0.5 font-mono">
                       {formatLakhs(remainingWallet)}
                     </p>
@@ -183,8 +199,12 @@ export default function ResultsPage({
                         className="flex items-center justify-between p-2 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-all duration-200"
                       >
                         <div className="flex items-center gap-1.5 font-medium text-slate-300">
-                          <span>{player.nationality === 'overseas' ? '✈️' : '🇮🇳'}</span>
-                          <span className="truncate max-w-[120px]">{player.name}</span>
+                          <span>
+                            {player.nationality === 'overseas' ? '✈️' : '🇮🇳'}
+                          </span>
+                          <span className="truncate max-w-[120px]">
+                            {player.name}
+                          </span>
                         </div>
                         <div className="flex items-center gap-2 font-bold font-mono">
                           <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 border border-white/5 text-slate-500 uppercase tracking-wider">

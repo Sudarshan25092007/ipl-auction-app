@@ -73,7 +73,9 @@ export async function initAllFranchiseStates(roomId: string): Promise<void> {
   }
 
   await pipeline.exec();
-  console.info(`[FranchiseState] Initialized state for ${members.length} franchises in room ${roomId}`);
+  console.info(
+    `[FranchiseState] Initialized state for ${members.length} franchises in room ${roomId}`
+  );
 }
 
 // ─── Load ─────────────────────────────────────────────────────────────────────
@@ -93,7 +95,9 @@ export async function loadFranchiseState(
   }
 
   // Redis miss → rebuild from DB
-  console.warn(`[FranchiseState] Cache miss for ${franchise} in room ${roomId} — rebuilding from DB`);
+  console.warn(
+    `[FranchiseState] Cache miss for ${franchise} in room ${roomId} — rebuilding from DB`
+  );
   return await rebuildFranchiseStateFromDB(roomId, franchise);
 }
 
@@ -116,7 +120,10 @@ export async function deductFromFranchiseState(
   }
 ): Promise<FranchiseState> {
   const current = await loadFranchiseState(roomId, franchise);
-  if (!current) throw new Error(`FranchiseState not found for ${franchise} in room ${roomId}`);
+  if (!current)
+    throw new Error(
+      `FranchiseState not found for ${franchise} in room ${roomId}`
+    );
 
   // Determine price tier for the winning bid
   let tier: 'tier25Plus' | 'tier20to25' | 'tier15to20' | 'below15';
@@ -129,15 +136,36 @@ export async function deductFromFranchiseState(
     ...current,
     walletRemainingLakhs: current.walletRemainingLakhs - priceLakhs,
     squadCount: current.squadCount + 1,
-    tier25PlusCount: tier === 'tier25Plus' ? current.tier25PlusCount + 1 : current.tier25PlusCount,
-    tier20to25Count: tier === 'tier20to25' ? current.tier20to25Count + 1 : current.tier20to25Count,
-    tier15to20Count: tier === 'tier15to20' ? current.tier15to20Count + 1 : current.tier15to20Count,
-    overseasCount: player.nationality === 'overseas' ? current.overseasCount + 1 : current.overseasCount,
-    uncappedCount: !player.isCapped ? current.uncappedCount + 1 : current.uncappedCount,
+    tier25PlusCount:
+      tier === 'tier25Plus'
+        ? current.tier25PlusCount + 1
+        : current.tier25PlusCount,
+    tier20to25Count:
+      tier === 'tier20to25'
+        ? current.tier20to25Count + 1
+        : current.tier20to25Count,
+    tier15to20Count:
+      tier === 'tier15to20'
+        ? current.tier15to20Count + 1
+        : current.tier15to20Count,
+    overseasCount:
+      player.nationality === 'overseas'
+        ? current.overseasCount + 1
+        : current.overseasCount,
+    uncappedCount: !player.isCapped
+      ? current.uncappedCount + 1
+      : current.uncappedCount,
     wkCount: player.role === 'wk' ? current.wkCount + 1 : current.wkCount,
-    batterCount: player.role === 'batter' ? current.batterCount + 1 : current.batterCount,
-    bowlerCount: (player.role === 'pacer' || player.role === 'spinner') ? current.bowlerCount + 1 : current.bowlerCount,
-    allRounderCount: player.role === 'allrounder' ? current.allRounderCount + 1 : current.allRounderCount,
+    batterCount:
+      player.role === 'batter' ? current.batterCount + 1 : current.batterCount,
+    bowlerCount:
+      player.role === 'pacer' || player.role === 'spinner'
+        ? current.bowlerCount + 1
+        : current.bowlerCount,
+    allRounderCount:
+      player.role === 'allrounder'
+        ? current.allRounderCount + 1
+        : current.allRounderCount,
   };
 
   await redis.set(
@@ -161,7 +189,10 @@ export async function loadAllFranchiseStates(
 
   for (const member of members) {
     if (!member.franchise) continue;
-    const state = await loadFranchiseState(roomId, member.franchise as FranchiseName);
+    const state = await loadFranchiseState(
+      roomId,
+      member.franchise as FranchiseName
+    );
     if (state) {
       states[member.franchise] = state;
     }
@@ -207,15 +238,24 @@ async function rebuildFranchiseStateFromDB(
     franchise,
     walletRemainingLakhs: member.wallet_remaining_lakhs,
     squadCount: squadResult.rows.length,
-    tier25PlusCount: squadResult.rows.filter(r => r.price_paid_lakhs >= 2_500).length,
-    tier20to25Count: squadResult.rows.filter(r => r.price_paid_lakhs >= 2_000 && r.price_paid_lakhs < 2_500).length,
-    tier15to20Count: squadResult.rows.filter(r => r.price_paid_lakhs >= 1_500 && r.price_paid_lakhs < 2_000).length,
-    overseasCount: squadResult.rows.filter(r => r.nationality === 'overseas').length,
-    uncappedCount: squadResult.rows.filter(r => !r.is_capped).length,
-    wkCount: squadResult.rows.filter(r => r.role === 'wk').length,
-    batterCount: squadResult.rows.filter(r => r.role === 'batter').length,
-    bowlerCount: squadResult.rows.filter(r => r.role === 'pacer' || r.role === 'spinner').length,
-    allRounderCount: squadResult.rows.filter(r => r.role === 'allrounder').length,
+    tier25PlusCount: squadResult.rows.filter((r) => r.price_paid_lakhs >= 2_500)
+      .length,
+    tier20to25Count: squadResult.rows.filter(
+      (r) => r.price_paid_lakhs >= 2_000 && r.price_paid_lakhs < 2_500
+    ).length,
+    tier15to20Count: squadResult.rows.filter(
+      (r) => r.price_paid_lakhs >= 1_500 && r.price_paid_lakhs < 2_000
+    ).length,
+    overseasCount: squadResult.rows.filter((r) => r.nationality === 'overseas')
+      .length,
+    uncappedCount: squadResult.rows.filter((r) => !r.is_capped).length,
+    wkCount: squadResult.rows.filter((r) => r.role === 'wk').length,
+    batterCount: squadResult.rows.filter((r) => r.role === 'batter').length,
+    bowlerCount: squadResult.rows.filter(
+      (r) => r.role === 'pacer' || r.role === 'spinner'
+    ).length,
+    allRounderCount: squadResult.rows.filter((r) => r.role === 'allrounder')
+      .length,
   };
 
   // Re-cache the rebuilt state

@@ -53,7 +53,14 @@ interface AuctionState {
   currentBidder: FranchiseName | null;
   secondsLeft: number;
   auctionPhase: 'marquee' | 'general';
-  auctionState: 'idle' | 'player_up' | 'bidding' | 'paused' | 'sold' | 'unsold' | 'complete';
+  auctionState:
+    | 'idle'
+    | 'player_up'
+    | 'bidding'
+    | 'paused'
+    | 'sold'
+    | 'unsold'
+    | 'complete';
   queuePosition: number;
   queueTotal: number;
 
@@ -141,7 +148,6 @@ const initialState = {
   squadPlayers: initialSquadPlayers(),
 };
 
-
 export const useAuctionStore = create<AuctionState>((set, get) => ({
   ...initialState,
 
@@ -187,7 +193,7 @@ export const useAuctionStore = create<AuctionState>((set, get) => ({
   markPlayerSold: (payload) =>
     set((state) => {
       const { winningFranchise, finalPriceLakhs } = payload;
-      
+
       // Update global franchise summaries
       const updatedSummaries = { ...state.squadSummaries };
       if (winningFranchise && updatedSummaries[winningFranchise]) {
@@ -203,13 +209,17 @@ export const useAuctionStore = create<AuctionState>((set, get) => ({
       if (winningFranchise) {
         updatedSquadPlayers[winningFranchise] = [
           ...(updatedSquadPlayers[winningFranchise] || []),
-          { player: payload.player, pricePaidLakhs: finalPriceLakhs }
+          { player: payload.player, pricePaidLakhs: finalPriceLakhs },
         ];
       }
 
       // If the local user claimed this franchise, update their detailed state too
       let myFranchiseState = state.myFranchiseState;
-      if (winningFranchise && myFranchiseState && myFranchiseState.franchise === winningFranchise) {
+      if (
+        winningFranchise &&
+        myFranchiseState &&
+        myFranchiseState.franchise === winningFranchise
+      ) {
         myFranchiseState = {
           ...myFranchiseState,
           walletRemainingLakhs: payload.updatedSquad.walletRemainingLakhs,
@@ -219,10 +229,9 @@ export const useAuctionStore = create<AuctionState>((set, get) => ({
             payload.player.nationality === 'overseas'
               ? myFranchiseState.overseasCount + 1
               : myFranchiseState.overseasCount,
-          uncappedCount:
-            !payload.player.isCapped
-              ? myFranchiseState.uncappedCount + 1
-              : myFranchiseState.uncappedCount,
+          uncappedCount: !payload.player.isCapped
+            ? myFranchiseState.uncappedCount + 1
+            : myFranchiseState.uncappedCount,
           wkCount:
             payload.player.role === 'wk'
               ? myFranchiseState.wkCount + 1

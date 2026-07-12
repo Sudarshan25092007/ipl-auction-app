@@ -50,7 +50,7 @@ export function getSocket(): Socket {
   if (typeof window === 'undefined') {
     throw new Error(
       '[Socket] getSocket() was called in a Server Component. ' +
-      'Move this call to a "use client" component.'
+        'Move this call to a "use client" component.'
     );
   }
 
@@ -65,8 +65,8 @@ export function getSocket(): Socket {
       // Reconnection config — Socket.IO handles drops automatically
       reconnection: true,
       reconnectionAttempts: 5,
-      reconnectionDelay: 1_000,      // 1s initial delay
-      reconnectionDelayMax: 5_000,   // Max 5s between attempts (exponential backoff)
+      reconnectionDelay: 1_000, // 1s initial delay
+      reconnectionDelayMax: 5_000, // Max 5s between attempts (exponential backoff)
     });
 
     // Development-only logging — stripped in production build
@@ -96,7 +96,9 @@ export function destroySocket(): void {
     socket.disconnect();
     socket = null;
     if (process.env.NODE_ENV === 'development') {
-      console.info('[Socket] Singleton destroyed — will reconnect on next getSocket() call');
+      console.info(
+        '[Socket] Singleton destroyed — will reconnect on next getSocket() call'
+      );
     }
   }
 }

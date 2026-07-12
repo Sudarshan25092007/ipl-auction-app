@@ -37,7 +37,7 @@ import { clearJwt, getJwt } from '../lib/api';
 export interface AuthState {
   user: Pick<JwtPayload, 'sub' | 'email' | 'username'> | null;
   isAuthenticated: boolean;
-  isLoading: boolean;       // true until localStorage has been read (avoids flash of unauthenticated content)
+  isLoading: boolean; // true until localStorage has been read (avoids flash of unauthenticated content)
   logout: () => void;
 }
 

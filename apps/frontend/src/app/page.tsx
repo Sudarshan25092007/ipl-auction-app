@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from 'next/link';
 
 export default function Home() {
   return (
@@ -32,7 +32,6 @@ export default function Home() {
 
       {/* Hero Section */}
       <main className="flex-1 max-w-6xl mx-auto w-full px-6 flex flex-col items-center justify-center text-center py-12 md:py-20 space-y-10">
-        
         {/* Badge */}
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 animate-pulse">
           ⚡ Real-time WebSocket Draft Engine
@@ -47,7 +46,9 @@ export default function Home() {
             </span>
           </h1>
           <p className="text-slate-400 text-sm md:text-lg max-w-xl mx-auto leading-relaxed">
-            Experience the adrenaline of a real-time IPL player draft. Claim your franchise, manage a ₹120 Crore wallet under strict caps, and outbid rival managers.
+            Experience the adrenaline of a real-time IPL player draft. Claim
+            your franchise, manage a ₹120 Crore wallet under strict caps, and
+            outbid rival managers.
           </p>
         </div>
 
@@ -71,25 +72,34 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full pt-12 md:pt-16">
           <div className="p-6 bg-slate-900/40 border border-white/5 rounded-3xl text-left space-y-3 hover:border-white/10 transition-all duration-300">
             <span className="text-2xl">⚡</span>
-            <h3 className="text-white font-bold text-base">Real-time Bidding</h3>
+            <h3 className="text-white font-bold text-base">
+              Real-time Bidding
+            </h3>
             <p className="text-slate-400 text-xs leading-relaxed">
-              Highly concurrent WebSocket system with a 300ms double-click bid lock preventing server exploits.
+              Highly concurrent WebSocket system with a 300ms double-click bid
+              lock preventing server exploits.
             </p>
           </div>
-          
+
           <div className="p-6 bg-slate-900/40 border border-white/5 rounded-3xl text-left space-y-3 hover:border-white/10 transition-all duration-300">
             <span className="text-2xl">📊</span>
-            <h3 className="text-white font-bold text-base">Salary Cap Engine</h3>
+            <h3 className="text-white font-bold text-base">
+              Salary Cap Engine
+            </h3>
             <p className="text-slate-400 text-xs leading-relaxed">
-              Dynamic verification verifies budgets against player composition limits, overseas bounds, and marquee caps.
+              Dynamic verification verifies budgets against player composition
+              limits, overseas bounds, and marquee caps.
             </p>
           </div>
 
           <div className="p-6 bg-slate-900/40 border border-white/5 rounded-3xl text-left space-y-3 hover:border-white/10 transition-all duration-300">
             <span className="text-2xl">👑</span>
-            <h3 className="text-white font-bold text-base">238 Loaded Players</h3>
+            <h3 className="text-white font-bold text-base">
+              238 Loaded Players
+            </h3>
             <p className="text-slate-400 text-xs leading-relaxed">
-              Seeded from your custom Excel sheet including elite marquee rounds, general drafts, uncapped players, and retired veterans.
+              Seeded from your custom Excel sheet including elite marquee
+              rounds, general drafts, uncapped players, and retired veterans.
             </p>
           </div>
         </div>
@@ -97,7 +107,8 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t border-white/5 py-6 text-center text-xs text-slate-600 tracking-wider uppercase shrink-0">
-        🏏 IPL Mock Auction Arena © {new Date().getFullYear()} — Made with Antigravity
+        🏏 IPL Mock Auction Arena © {new Date().getFullYear()} — Made with
+        Antigravity
       </footer>
     </div>
   );

@@ -52,8 +52,16 @@ function getBidTier(
   amountLakhs: number
 ): 'tier25Plus' | 'tier20to25' | 'tier15to20' | 'below15' {
   if (amountLakhs >= TIER_25_PLUS_THRESHOLD_LAKHS) return 'tier25Plus';
-  if (amountLakhs >= TIER_20_25_LOWER_LAKHS && amountLakhs <= TIER_20_25_UPPER_LAKHS) return 'tier20to25';
-  if (amountLakhs >= TIER_15_20_LOWER_LAKHS && amountLakhs <= TIER_15_20_UPPER_LAKHS) return 'tier15to20';
+  if (
+    amountLakhs >= TIER_20_25_LOWER_LAKHS &&
+    amountLakhs <= TIER_20_25_UPPER_LAKHS
+  )
+    return 'tier20to25';
+  if (
+    amountLakhs >= TIER_15_20_LOWER_LAKHS &&
+    amountLakhs <= TIER_15_20_UPPER_LAKHS
+  )
+    return 'tier15to20';
   return 'below15';
 }
 
@@ -77,7 +85,6 @@ export function canBid(
   player: Player,
   amountLakhs: number
 ): BidValidationResult {
-
   // ─── Rule 1: Squad Full ─────────────────────────────────────────────────────
   if (state.squadCount >= SQUAD_MAX_SIZE) {
     return { valid: false, reason: 'SQUAD_FULL' };
@@ -102,7 +109,10 @@ export function canBid(
   }
 
   // ─── Rule 4: Squad Composition Caps ────────────────────────────────────────
-  if (player.nationality === 'overseas' && state.overseasCount >= OVERSEAS_MAX) {
+  if (
+    player.nationality === 'overseas' &&
+    state.overseasCount >= OVERSEAS_MAX
+  ) {
     return { valid: false, reason: 'OVERSEAS_LIMIT_REACHED' };
   }
   if (player.role === 'wk' && state.wkCount >= WK_MAX) {
@@ -121,7 +131,10 @@ export function canBid(
   const remainingSlots = SQUAD_MAX_SIZE - state.squadCount - 1; // -1 for this player
   const minimumBasePriceLakhs = 20; // Minimum base price any player can have
 
-  if (remainingSlots > 0 && walletAfterBid < remainingSlots * minimumBasePriceLakhs) {
+  if (
+    remainingSlots > 0 &&
+    walletAfterBid < remainingSlots * minimumBasePriceLakhs
+  ) {
     return { valid: false, reason: 'CANNOT_COMPLETE_VALID_SQUAD' };
   }
 
@@ -141,7 +154,9 @@ export function canBid(
  *   The frontend uses these for local tooltip text (before even sending the bid).
  *   One source, consistent UX messages.
  */
-export function getBidRejectionMessage(reason: BidValidationResult['reason']): string {
+export function getBidRejectionMessage(
+  reason: BidValidationResult['reason']
+): string {
   switch (reason) {
     case 'WALLET_EXHAUSTED':
       return 'Insufficient funds. Your wallet cannot cover this bid.';

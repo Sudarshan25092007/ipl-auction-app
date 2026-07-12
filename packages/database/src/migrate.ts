@@ -30,9 +30,10 @@ async function runMigrations() {
   // Create client directly for executing DDL commands
   const client = new Client({
     connectionString: dbUrl,
-    ssl: dbUrl.includes('supabase.co') || dbUrl.includes('pooler.supabase.com')
-      ? { rejectUnauthorized: false }
-      : undefined,
+    ssl:
+      dbUrl.includes('supabase.co') || dbUrl.includes('pooler.supabase.com')
+        ? { rejectUnauthorized: false }
+        : undefined,
   });
 
   try {
@@ -45,7 +46,8 @@ async function runMigrations() {
       throw new Error(`Migrations directory not found at: ${migrationsDir}`);
     }
 
-    const files = fs.readdirSync(migrationsDir)
+    const files = fs
+      .readdirSync(migrationsDir)
       .filter((file) => file.endsWith('.sql'))
       .sort(); // Run 001, 002, 003 sequentially
 

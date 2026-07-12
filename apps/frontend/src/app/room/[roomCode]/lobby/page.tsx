@@ -76,7 +76,9 @@ export default function LobbyPage({
         setIsPageLoading(false);
       })
       .catch((err) => {
-        setError(err instanceof ApiError ? err.message : 'Failed to load room.');
+        setError(
+          err instanceof ApiError ? err.message : 'Failed to load room.'
+        );
         setIsPageLoading(false);
       });
   }, [roomCode, authLoading]);
@@ -92,7 +94,9 @@ export default function LobbyPage({
     const onUserJoined = (payload: { participants: LobbyParticipant[] }) => {
       setParticipants(payload.participants);
     };
-    const onFranchiseClaimed = (payload: { participants: LobbyParticipant[] }) => {
+    const onFranchiseClaimed = (payload: {
+      participants: LobbyParticipant[];
+    }) => {
       setParticipants(payload.participants);
     };
     const onAuctionStarting = () => {
@@ -138,7 +142,8 @@ export default function LobbyPage({
     }
   }, [user, authLoading, router]);
 
-  if (authLoading || isPageLoading) return <LoadingSpinner message="Loading lobby..." />;
+  if (authLoading || isPageLoading)
+    return <LoadingSpinner message="Loading lobby..." />;
   if (!user) return null;
   if (error) {
     return (
@@ -146,7 +151,10 @@ export default function LobbyPage({
         <div className="text-center">
           <p className="text-2xl mb-2">⚠️</p>
           <p className="text-red-300">{error}</p>
-          <button onClick={() => router.push('/dashboard')} className="mt-4 text-orange-400 hover:text-orange-300">
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="mt-4 text-orange-400 hover:text-orange-300"
+          >
             Go to Dashboard
           </button>
         </div>
@@ -155,7 +163,8 @@ export default function LobbyPage({
   }
 
   const isHost = user.sub === lobbyData?.room.hostUserId;
-  const allHaveFranchise = participants.length > 0 && participants.every((p) => p.franchise);
+  const allHaveFranchise =
+    participants.length > 0 && participants.every((p) => p.franchise);
   // Derive current user's participant record to know if THEY have selected a franchise
   const myParticipant = participants.find((p) => p.userId === user?.sub);
   const iHaveSelectedFranchise = Boolean(myParticipant?.franchise);
@@ -163,13 +172,14 @@ export default function LobbyPage({
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 p-4 md:p-8">
       <div className="max-w-3xl mx-auto space-y-6">
-
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-white">Auction Lobby</h1>
             <div className="flex items-center gap-2 mt-1">
-              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
+              <div
+                className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`}
+              />
               <span className="text-xs text-slate-400">
                 {isConnected ? 'Live' : 'Connecting...'}
               </span>
@@ -225,17 +235,29 @@ export default function LobbyPage({
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-white font-medium text-sm truncate">{p.username}</span>
-                    {p.isHost && <span className="text-xs text-orange-400">Host</span>}
-                    {p.userId === user?.sub && <span className="text-xs text-slate-500">(you)</span>}
+                    <span className="text-white font-medium text-sm truncate">
+                      {p.username}
+                    </span>
+                    {p.isHost && (
+                      <span className="text-xs text-orange-400">Host</span>
+                    )}
+                    {p.userId === user?.sub && (
+                      <span className="text-xs text-slate-500">(you)</span>
+                    )}
                   </div>
                   {p.franchise ? (
-                    <span className="text-xs text-green-400 truncate block">{p.franchise}</span>
+                    <span className="text-xs text-green-400 truncate block">
+                      {p.franchise}
+                    </span>
                   ) : (
-                    <span className="text-xs text-slate-500">Selecting franchise...</span>
+                    <span className="text-xs text-slate-500">
+                      Selecting franchise...
+                    </span>
                   )}
                 </div>
-                <div className={`w-2 h-2 rounded-full ${p.franchise ? 'bg-green-400' : 'bg-amber-400 animate-pulse'}`} />
+                <div
+                  className={`w-2 h-2 rounded-full ${p.franchise ? 'bg-green-400' : 'bg-amber-400 animate-pulse'}`}
+                />
               </div>
             ))}
           </div>
@@ -243,7 +265,6 @@ export default function LobbyPage({
 
         {/* CTA — two possible states per user */}
         <div className="space-y-3">
-
           {/* Step 1 — Franchise Selection (shown to EVERYONE who hasn't picked yet) */}
           {!iHaveSelectedFranchise && (
             <button
@@ -264,14 +285,22 @@ export default function LobbyPage({
               className="w-full py-4 rounded-2xl bg-gradient-to-r from-orange-500 to-yellow-500 text-white font-bold text-lg disabled:opacity-40 disabled:cursor-not-allowed hover:from-orange-600 hover:to-yellow-600 transition-all duration-200 shadow-xl shadow-orange-500/25 flex items-center justify-center gap-2"
             >
               {isStarting ? (
-                <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Starting...</>
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />{' '}
+                  Starting...
+                </>
               ) : (
-                <>🚀 Start Auction {!allHaveFranchise && `(${participants.filter(p => p.franchise).length}/${participants.length} ready)`}</>
+                <>
+                  🚀 Start Auction{' '}
+                  {!allHaveFranchise &&
+                    `(${participants.filter((p) => p.franchise).length}/${participants.length} ready)`}
+                </>
               )}
             </button>
           ) : iHaveSelectedFranchise ? (
             <div className="text-center py-3 text-slate-400 text-sm bg-white/5 border border-white/10 rounded-2xl">
-              ✅ Franchise selected — waiting for the host to start the auction...
+              ✅ Franchise selected — waiting for the host to start the
+              auction...
             </div>
           ) : null}
         </div>

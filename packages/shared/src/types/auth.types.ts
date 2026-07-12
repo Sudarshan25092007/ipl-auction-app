@@ -27,11 +27,11 @@
  */
 
 export interface JwtPayload {
-  sub: string;      // user.id (UUID) — "who" this token belongs to
+  sub: string; // user.id (UUID) — "who" this token belongs to
   email: string;
   username: string;
-  iat: number;      // Issued At (Unix seconds) — auto-added by jsonwebtoken
-  exp: number;      // Expiry (Unix seconds)    — auto-added when expiresIn: '7d' is passed
+  iat: number; // Issued At (Unix seconds) — auto-added by jsonwebtoken
+  exp: number; // Expiry (Unix seconds)    — auto-added when expiresIn: '7d' is passed
 }
 
 /**

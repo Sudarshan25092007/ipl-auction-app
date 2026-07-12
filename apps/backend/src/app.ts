@@ -36,22 +36,24 @@ const app: Express = express();
 
 // ─── Body Parsing Middleware ───────────────────────────────────────────────────
 // Must be registered before any route that reads req.body
-app.use(express.json({ limit: '10kb' }));          // Cap payload at 10kb — prevents large-body DoS
+app.use(express.json({ limit: '10kb' })); // Cap payload at 10kb — prevents large-body DoS
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 // Restricts which origins can make cross-origin requests to this API.
 // In production: origin should be the Vercel deployment URL (Phase 6).
 // credentials: true allows cookies to be sent cross-origin (needed for Next.js middleware).
-app.use(cors({
-  origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-}));
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  })
+);
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.use('/auth', authRouter);
-app.use('/rooms', roomsRouter);  // jwtAuth is applied inside roomsRouter
+app.use('/rooms', roomsRouter); // jwtAuth is applied inside roomsRouter
 // Phase 4 will add: app.use('/players', jwtAuth, playersRouter);
 
 // ─── Health Check ─────────────────────────────────────────────────────────────

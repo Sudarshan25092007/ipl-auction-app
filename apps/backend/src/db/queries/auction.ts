@@ -48,7 +48,9 @@ export async function insertAuctionQueue(
 
   orderedPlayers.forEach(({ player, phase }, index) => {
     const base = index * 4; // 4 values per row
-    placeholders.push(`(gen_random_uuid(), $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, 'pending')`);
+    placeholders.push(
+      `(gen_random_uuid(), $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, 'pending')`
+    );
     values.push(roomId, player.id, index + 1, phase); // position is 1-indexed
   });
 
@@ -63,9 +65,14 @@ export async function insertAuctionQueue(
  * Get the full ordered queue for a room from the DB.
  * Used as Redis fallback when the cached queue is missing.
  */
-export async function getAuctionQueueFromDB(
-  roomId: string
-): Promise<Array<{ playerId: string; position: number; phase: 'marquee' | 'general'; status: string }>> {
+export async function getAuctionQueueFromDB(roomId: string): Promise<
+  Array<{
+    playerId: string;
+    position: number;
+    phase: 'marquee' | 'general';
+    status: string;
+  }>
+> {
   const result = await pool.query<{
     player_id: string;
     position: number;
@@ -90,7 +97,10 @@ export async function getAuctionQueueFromDB(
  * Mark a queue entry as 'active' (currently on the block).
  * Called when the auction engine advances to a new player.
  */
-export async function markQueueEntryActive(roomId: string, position: number): Promise<void> {
+export async function markQueueEntryActive(
+  roomId: string,
+  position: number
+): Promise<void> {
   await pool.query(
     `UPDATE auction_queue SET status = 'active'
      WHERE room_id = $1 AND position = $2`,
@@ -146,7 +156,13 @@ export async function insertBid(params: {
   await pool.query(
     `INSERT INTO bids (id, room_id, player_id, room_member_id, amount_lakhs, is_winning_bid, placed_at)
      VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, NOW())`,
-    [params.roomId, params.playerId, params.roomMemberId, params.amountLakhs, params.isWinningBid]
+    [
+      params.roomId,
+      params.playerId,
+      params.roomMemberId,
+      params.amountLakhs,
+      params.isWinningBid,
+    ]
   );
 }
 
@@ -191,7 +207,13 @@ export async function recordPlayerSold(params: {
        SELECT gen_random_uuid(), $1, $2, rm.user_id, 'player_sold',
               jsonb_build_object('franchise', $3, 'price_lakhs', $4), NOW()
        FROM room_members rm WHERE rm.id = $5`,
-      [params.roomId, params.playerId, params.franchise, params.priceLakhs, params.roomMemberId]
+      [
+        params.roomId,
+        params.playerId,
+        params.franchise,
+        params.priceLakhs,
+        params.roomMemberId,
+      ]
     );
 
     await client.query('COMMIT');

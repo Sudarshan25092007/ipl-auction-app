@@ -43,7 +43,7 @@ export interface RoomMemberRow {
   id: string;
   room_id: string;
   user_id: string;
-  username: string;        // Joined from users table
+  username: string; // Joined from users table
   franchise: string | null;
   wallet_remaining_lakhs: number;
   joined_at: Date;
@@ -86,7 +86,11 @@ export async function createRoom(hostUserId: string): Promise<RoomRow> {
       );
       return result.rows[0];
     } catch (err: unknown) {
-      if (isPostgresError(err) && err.code === '23505' && attempt < MAX_RETRIES - 1) {
+      if (
+        isPostgresError(err) &&
+        err.code === '23505' &&
+        attempt < MAX_RETRIES - 1
+      ) {
         continue; // Invite code collision — retry with new code
       }
       throw err;
@@ -99,7 +103,9 @@ export async function createRoom(hostUserId: string): Promise<RoomRow> {
  * Find a room by its invite code. Returns null if not found.
  * Used by: POST /rooms/join, socket room:join handler.
  */
-export async function getRoomByCode(inviteCode: string): Promise<RoomRow | null> {
+export async function getRoomByCode(
+  inviteCode: string
+): Promise<RoomRow | null> {
   const result = await pool.query<RoomRow>(
     `SELECT * FROM rooms WHERE invite_code = $1 LIMIT 1`,
     [inviteCode.toUpperCase().trim()]
@@ -154,7 +160,9 @@ export async function addMemberToRoom(
  * LEFT JOIN on users table — one query, no N+1 problem.
  * Ordered by joined_at so the lobby list is stable.
  */
-export async function getMembersForRoom(roomId: string): Promise<RoomMemberRow[]> {
+export async function getMembersForRoom(
+  roomId: string
+): Promise<RoomMemberRow[]> {
   const result = await pool.query<RoomMemberRow>(
     `SELECT
        rm.id,
@@ -177,7 +185,10 @@ export async function getMembersForRoom(roomId: string): Promise<RoomMemberRow[]
  * Check if a specific user is already a member of a room.
  * Used for belt-and-suspenders check in socket room:join handler.
  */
-export async function isRoomMember(roomId: string, userId: string): Promise<boolean> {
+export async function isRoomMember(
+  roomId: string,
+  userId: string
+): Promise<boolean> {
   const result = await pool.query<{ exists: boolean }>(
     `SELECT EXISTS(
        SELECT 1 FROM room_members WHERE room_id = $1 AND user_id = $2
@@ -220,7 +231,9 @@ export async function claimFranchise(
  * Check if all members in a room have selected a franchise.
  * Used by roomHandler before allowing the host to start the auction.
  */
-export async function allMembersHaveFranchise(roomId: string): Promise<boolean> {
+export async function allMembersHaveFranchise(
+  roomId: string
+): Promise<boolean> {
   const result = await pool.query<{ unselected: string }>(
     `SELECT COUNT(*) AS unselected
      FROM room_members
@@ -243,7 +256,9 @@ export interface SquadPlayerRecord {
   base_price_lakhs: number;
 }
 
-export async function getSquadPlayersForRoom(roomId: string): Promise<SquadPlayerRecord[]> {
+export async function getSquadPlayersForRoom(
+  roomId: string
+): Promise<SquadPlayerRecord[]> {
   const result = await pool.query<SquadPlayerRecord>(
     `SELECT rm.franchise, sp.price_paid_lakhs, p.id AS player_id, p.name AS player_name,
             p.category, p.role, p.nationality, p.is_marquee, p.is_capped, p.base_price_lakhs
@@ -258,6 +273,8 @@ export async function getSquadPlayersForRoom(roomId: string): Promise<SquadPlaye
 }
 
 /** Type guard for PostgreSQL errors */
-function isPostgresError(err: unknown): err is { code: string; message: string } {
+function isPostgresError(
+  err: unknown
+): err is { code: string; message: string } {
   return typeof err === 'object' && err !== null && 'code' in err;
 }

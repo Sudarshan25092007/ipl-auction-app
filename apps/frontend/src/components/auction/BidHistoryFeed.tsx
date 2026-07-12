@@ -36,7 +36,9 @@ export function BidHistoryFeed() {
     return (
       <div className="flex flex-col items-center justify-center h-48 border border-white/5 bg-white/5 rounded-2xl p-6 text-center text-slate-500">
         <span className="text-3xl mb-1">⏳</span>
-        <span className="text-sm font-medium">Waiting for auction to begin...</span>
+        <span className="text-sm font-medium">
+          Waiting for auction to begin...
+        </span>
       </div>
     );
   }
@@ -52,7 +54,9 @@ export function BidHistoryFeed() {
           <span className="text-2xl mb-1">🎯</span>
           <p className="text-sm font-semibold">No bids yet</p>
           <p className="text-xs text-slate-600 mt-1">
-            {currentPlayer ? `Start the bidding at ${formatLakhs(currentPlayer.basePriceLakhs)}!` : ''}
+            {currentPlayer
+              ? `Start the bidding at ${formatLakhs(currentPlayer.basePriceLakhs)}!`
+              : ''}
           </p>
         </div>
       ) : (

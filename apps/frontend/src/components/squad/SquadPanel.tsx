@@ -28,7 +28,9 @@ export function SquadPanel({ franchise, showWallet = true }: SquadPanelProps) {
   // Group players by role
   const groupedPlayers = useMemo(() => {
     const batters = players.filter((p) => p.player.role === 'batter');
-    const bowlers = players.filter((p) => p.player.role === 'pacer' || p.player.role === 'spinner');
+    const bowlers = players.filter(
+      (p) => p.player.role === 'pacer' || p.player.role === 'spinner'
+    );
     const allrounders = players.filter((p) => p.player.role === 'allrounder');
     const wks = players.filter((p) => p.player.role === 'wk');
 
@@ -38,7 +40,9 @@ export function SquadPanel({ franchise, showWallet = true }: SquadPanelProps) {
   // Compute composition limits
   const stats = useMemo(() => {
     const total = players.length;
-    const overseas = players.filter((p) => p.player.nationality === 'overseas').length;
+    const overseas = players.filter(
+      (p) => p.player.nationality === 'overseas'
+    ).length;
     const wk = players.filter((p) => p.player.role === 'wk').length;
 
     return { total, overseas, wk };
@@ -59,27 +63,41 @@ export function SquadPanel({ franchise, showWallet = true }: SquadPanelProps) {
       {/* Wallet progress bar */}
       {showWallet && summary && (
         <div className="bg-black/20 p-3.5 rounded-xl border border-white/5 shadow-inner">
-          <WalletProgressBar walletRemainingLakhs={summary.walletRemainingLakhs} />
+          <WalletProgressBar
+            walletRemainingLakhs={summary.walletRemainingLakhs}
+          />
         </div>
       )}
 
       {/* Composition Stats Badges */}
       <div className="grid grid-cols-3 gap-2">
         <div className="bg-white/5 border border-white/5 rounded-xl p-2.5 text-center">
-          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Squad</p>
-          <p className={`text-base font-black font-mono mt-0.5 ${stats.total > 25 ? 'text-red-400' : 'text-slate-200'}`}>
+          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+            Squad
+          </p>
+          <p
+            className={`text-base font-black font-mono mt-0.5 ${stats.total > 25 ? 'text-red-400' : 'text-slate-200'}`}
+          >
             {stats.total}/25
           </p>
         </div>
         <div className="bg-white/5 border border-white/5 rounded-xl p-2.5 text-center">
-          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Overseas</p>
-          <p className={`text-base font-black font-mono mt-0.5 ${stats.overseas > 8 ? 'text-red-400' : 'text-slate-200'}`}>
+          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+            Overseas
+          </p>
+          <p
+            className={`text-base font-black font-mono mt-0.5 ${stats.overseas > 8 ? 'text-red-400' : 'text-slate-200'}`}
+          >
             {stats.overseas}/8
           </p>
         </div>
         <div className="bg-white/5 border border-white/5 rounded-xl p-2.5 text-center">
-          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">WKs</p>
-          <p className={`text-base font-black font-mono mt-0.5 ${stats.wk > 4 || stats.wk < 1 ? 'text-amber-400 animate-pulse' : 'text-slate-200'}`}>
+          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+            WKs
+          </p>
+          <p
+            className={`text-base font-black font-mono mt-0.5 ${stats.wk > 4 || stats.wk < 1 ? 'text-amber-400 animate-pulse' : 'text-slate-200'}`}
+          >
             {stats.wk}/4
           </p>
         </div>
@@ -107,12 +125,18 @@ function RoleSection({ title, list }: { title: string; list: any[] }) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between border-b border-white/5 pb-1">
-        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{title}</span>
-        <span className="text-[10px] font-bold text-slate-500 font-mono">({list.length})</span>
+        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+          {title}
+        </span>
+        <span className="text-[10px] font-bold text-slate-500 font-mono">
+          ({list.length})
+        </span>
       </div>
 
       {list.length === 0 ? (
-        <p className="text-[10px] text-slate-600 font-medium italic pl-1 py-1">No players won yet</p>
+        <p className="text-[10px] text-slate-600 font-medium italic pl-1 py-1">
+          No players won yet
+        </p>
       ) : (
         <div className="space-y-1 pl-1">
           {list.map(({ player, pricePaidLakhs }) => (

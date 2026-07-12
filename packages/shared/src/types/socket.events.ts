@@ -32,29 +32,30 @@ import type { SquadSummary, FranchiseState } from './squad.types';
 
 export const SOCKET_EVENTS = {
   // ─── Client → Server ──────────────────────────────────────────────────────
-  BID_PLACED:         'auction:bid_placed',    // Bidder sends a bid attempt
-  JOIN_ROOM:          'room:join',              // Client joins a room socket channel
-  SELECT_FRANCHISE:   'room:franchise_select',  // Participant claims a franchise
-  START_AUCTION:      'room:start_auction',     // Host-only: begins the auction
+  BID_PLACED: 'auction:bid_placed', // Bidder sends a bid attempt
+  JOIN_ROOM: 'room:join', // Client joins a room socket channel
+  SELECT_FRANCHISE: 'room:franchise_select', // Participant claims a franchise
+  START_AUCTION: 'room:start_auction', // Host-only: begins the auction
 
   // ─── Server → Room (broadcast to all members) ─────────────────────────────
-  PLAYER_UP:          'auction:player_up',      // New player on the block
-  BID_UPDATE:         'auction:bid_update',     // A bid was accepted — new leader
-  TIMER_TICK:         'auction:timer_tick',     // Countdown tick (every 1 second)
-  PLAYER_SOLD:        'auction:player_sold',    // Timer expired, player has a winner
-  PLAYER_UNSOLD:      'auction:player_unsold',  // Timer expired, no valid bids
-  USER_JOINED:        'room:user_joined',       // Someone connected to lobby
-  FRANCHISE_CLAIMED:  'room:franchise_claimed', // Someone picked a franchise
-  PHASE_TRANSITION:   'auction:phase_transition', // Marquee → General round
-  AUCTION_COMPLETE:   'auction:complete',       // All players processed
+  PLAYER_UP: 'auction:player_up', // New player on the block
+  BID_UPDATE: 'auction:bid_update', // A bid was accepted — new leader
+  TIMER_TICK: 'auction:timer_tick', // Countdown tick (every 1 second)
+  PLAYER_SOLD: 'auction:player_sold', // Timer expired, player has a winner
+  PLAYER_UNSOLD: 'auction:player_unsold', // Timer expired, no valid bids
+  USER_JOINED: 'room:user_joined', // Someone connected to lobby
+  FRANCHISE_CLAIMED: 'room:franchise_claimed', // Someone picked a franchise
+  PHASE_TRANSITION: 'auction:phase_transition', // Marquee → General round
+  AUCTION_COMPLETE: 'auction:complete', // All players processed
 
   // ─── Server → Client (private — emitted to one specific socket) ───────────
-  BID_REJECTED:       'auction:bid_rejected',  // Validation failed — only bidder sees this
-  STATE_SYNC:         'auction:state_sync',    // Full state snapshot for reconnecting clients
+  BID_REJECTED: 'auction:bid_rejected', // Validation failed — only bidder sees this
+  STATE_SYNC: 'auction:state_sync', // Full state snapshot for reconnecting clients
 } as const;
 
 /** Helper: derive the union of all socket event name string values */
-export type SocketEventName = typeof SOCKET_EVENTS[keyof typeof SOCKET_EVENTS];
+export type SocketEventName =
+  (typeof SOCKET_EVENTS)[keyof typeof SOCKET_EVENTS];
 
 // ─── Client → Server Payloads ──────────────────────────────────────────────────
 
@@ -90,10 +91,10 @@ export interface StartAuctionPayload {
  */
 export interface PlayerUpPayload {
   player: Player;
-  queuePosition: number;     // e.g., 3 → "Player 3 of 94"
-  queueTotal: number;        // Total players in the queue
+  queuePosition: number; // e.g., 3 → "Player 3 of 94"
+  queueTotal: number; // Total players in the queue
   phase: 'marquee' | 'general';
-  timerSeconds: number;      // Initial countdown value
+  timerSeconds: number; // Initial countdown value
 }
 
 /**
@@ -105,7 +106,7 @@ export interface BidUpdatePayload {
   playerId: string;
   newBidLakhs: number;
   newBidder: FranchiseName;
-  timestamp: number;         // Date.now() at moment of bid acceptance
+  timestamp: number; // Date.now() at moment of bid acceptance
 }
 
 /**
@@ -125,7 +126,7 @@ export interface TimerTickPayload {
 export interface PlayerSoldPayload {
   player: Player;
   finalPriceLakhs: number;
-  winningFranchise: FranchiseName | null;  // null = player went unsold
+  winningFranchise: FranchiseName | null; // null = player went unsold
   updatedSquad: SquadSummary;
 }
 

@@ -34,13 +34,14 @@ export function SoldOverlay() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-md animate-[fadeIn_0.2s_ease-out]">
       <div className="relative text-center p-8 max-w-xl mx-auto space-y-6 transform animate-[scaleUp_0.4s_cubic-bezier(0.175,0.885,0.32,1.275)]">
-        
         {/* SOLD state */}
         {isSold && currentPlayer && meta ? (
           <>
             {/* Glowing Ring Effect */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full blur-3xl pointer-events-none opacity-20"
-                 style={{ backgroundColor: meta.primaryColor }} />
+            <div
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full blur-3xl pointer-events-none opacity-20"
+              style={{ backgroundColor: meta.primaryColor }}
+            />
 
             <div className="space-y-1 animate-pulse">
               <span className="text-5xl md:text-7xl font-black uppercase tracking-wider text-amber-400 drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]">
@@ -55,16 +56,24 @@ export function SoldOverlay() {
               <h2 className="text-2xl md:text-3xl font-extrabold text-white leading-tight">
                 {currentPlayer.name}
               </h2>
-              
+
               <div className="my-6 border-t border-white/5" />
 
               <div className="space-y-1.5">
                 <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest">
                   Acquired By
                 </p>
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/5 font-black text-white text-base tracking-tight"
-                     style={{ backgroundColor: `${meta.primaryColor}20`, borderLeft: `4px solid ${meta.primaryColor}` }}>
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: meta.primaryColor }} />
+                <div
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/5 font-black text-white text-base tracking-tight"
+                  style={{
+                    backgroundColor: `${meta.primaryColor}20`,
+                    borderLeft: `4px solid ${meta.primaryColor}`,
+                  }}
+                >
+                  <span
+                    className="w-2.5 h-2.5 rounded-full"
+                    style={{ backgroundColor: meta.primaryColor }}
+                  />
                   {currentBidder}
                 </div>
               </div>
@@ -96,7 +105,7 @@ export function SoldOverlay() {
                 <h2 className="text-2xl md:text-3xl font-extrabold text-slate-300 leading-tight">
                   {currentPlayer.name}
                 </h2>
-                
+
                 <div className="my-5 border-t border-white/5" />
 
                 <div className="space-y-1">
@@ -107,7 +116,7 @@ export function SoldOverlay() {
                     {formatLakhs(currentPlayer.basePriceLakhs)}
                   </p>
                 </div>
-                
+
                 <p className="text-xs text-slate-500 font-medium mt-4">
                   No bids met the player's base price.
                 </p>
@@ -115,7 +124,6 @@ export function SoldOverlay() {
             </>
           )
         )}
-
       </div>
     </div>
   );

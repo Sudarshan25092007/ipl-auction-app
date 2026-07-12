@@ -44,7 +44,11 @@
 import type { Server } from 'socket.io';
 import type { AuthenticatedSocket } from '../middleware/socketAuth';
 import { SOCKET_EVENTS, BID_LOCK_TTL_MS } from '@ipl-auction/shared';
-import type { BidPlacedPayload, FranchiseName, Player } from '@ipl-auction/shared';
+import type {
+  BidPlacedPayload,
+  FranchiseName,
+  Player,
+} from '@ipl-auction/shared';
 import { redis } from '../../redis/client';
 import { REDIS_KEYS } from '../../redis/keys';
 import { acquireLock, releaseLock } from '../../redis/lock';
@@ -55,7 +59,10 @@ import { getAuctionEngine } from '../../services/auctionEngine';
 import { getRoomByCode } from '../../db/queries/rooms';
 import { insertBid } from '../../db/queries/auction';
 
-export function registerAuctionHandlers(io: Server, socket: AuthenticatedSocket): void {
+export function registerAuctionHandlers(
+  io: Server,
+  socket: AuthenticatedSocket
+): void {
   const { username } = socket.data.user;
 
   // ─── auction:bid_placed ─────────────────────────────────────────────────────
@@ -101,7 +108,13 @@ export function registerAuctionHandlers(io: Server, socket: AuthenticatedSocket)
       const currentPlayer = JSON.parse(playerJson) as Player;
 
       // ── Step 5: Pre-lock validation (fast reject) ─────────────────────────
-      const preValidation = await validateBid(roomId, playerId, amountLakhs, franchiseState, currentPlayer);
+      const preValidation = await validateBid(
+        roomId,
+        playerId,
+        amountLakhs,
+        franchiseState,
+        currentPlayer
+      );
       if (!preValidation.valid) {
         socket.emit(SOCKET_EVENTS.BID_REJECTED, {
           reason: preValidation.reason,
@@ -111,7 +124,10 @@ export function registerAuctionHandlers(io: Server, socket: AuthenticatedSocket)
       }
 
       // ── Step 6: Acquire distributed lock ─────────────────────────────────
-      lockToken = await acquireLock(REDIS_KEYS.bidLock(roomId), BID_LOCK_TTL_MS);
+      lockToken = await acquireLock(
+        REDIS_KEYS.bidLock(roomId),
+        BID_LOCK_TTL_MS
+      );
       if (!lockToken) {
         // Lock is held by another bid processing concurrently — reject this one
         socket.emit(SOCKET_EVENTS.BID_REJECTED, {
@@ -153,7 +169,9 @@ export function registerAuctionHandlers(io: Server, socket: AuthenticatedSocket)
         timestamp: Date.now(),
       });
 
-      console.info(`[Auction] Bid accepted: ${franchise} bids ₹${amountLakhs}L on ${currentPlayer.name}`);
+      console.info(
+        `[Auction] Bid accepted: ${franchise} bids ₹${amountLakhs}L on ${currentPlayer.name}`
+      );
 
       // ── Step 11: Reset timer to 10 seconds ────────────────────────────────
       const engine = getAuctionEngine(roomId, io);
@@ -171,7 +189,8 @@ export function registerAuctionHandlers(io: Server, socket: AuthenticatedSocket)
       // getRoomMemberByFranchise + insertBid — fire-and-forget
       (async () => {
         try {
-          const { getRoomMemberByFranchise } = await import('../../db/queries/auction');
+          const { getRoomMemberByFranchise } =
+            await import('../../db/queries/auction');
           const member = await getRoomMemberByFranchise(roomId, franchise);
           if (member) {
             await insertBid({
@@ -183,12 +202,17 @@ export function registerAuctionHandlers(io: Server, socket: AuthenticatedSocket)
             });
           }
         } catch (dbErr) {
-          console.error('[Auction] Non-critical: failed to write bid to DB audit log:', dbErr);
+          console.error(
+            '[Auction] Non-critical: failed to write bid to DB audit log:',
+            dbErr
+          );
         }
       })();
-
     } catch (err) {
-      console.error(`[AuctionHandler] Unhandled error in bid_placed for ${username}:`, err);
+      console.error(
+        `[AuctionHandler] Unhandled error in bid_placed for ${username}:`,
+        err
+      );
       socket.emit(SOCKET_EVENTS.BID_REJECTED, {
         reason: 'AUCTION_NOT_ACTIVE',
         humanMessage: 'An unexpected error occurred. Please try again.',
@@ -198,144 +222,183 @@ export function registerAuctionHandlers(io: Server, socket: AuthenticatedSocket)
       if (lockToken) {
         const room = await getRoomByCode(payload.roomCode);
         if (room) {
-          await releaseLock(REDIS_KEYS.bidLock(room.id), lockToken).catch(() => {});
+          await releaseLock(REDIS_KEYS.bidLock(room.id), lockToken).catch(
+            () => {}
+          );
         }
       }
     }
   });
 
   // ─── auction:state_sync_request — Reconnection Recovery ─────────────────────
-  socket.on('auction:state_sync_request', async ({ roomCode }: { roomCode: string }) => {
-    try {
-      const room = await getRoomByCode(roomCode);
-      if (!room) return;
-      const roomId = room.id;
+  socket.on(
+    'auction:state_sync_request',
+    async ({ roomCode }: { roomCode: string }) => {
+      try {
+        const room = await getRoomByCode(roomCode);
+        if (!room) return;
+        const roomId = room.id;
 
-      // Read entire auction state from Redis in parallel (~1ms total)
-      const [
-        playerJson,
-        currentBidStr,
-        currentBidder,
-        auctionState,
-      ] = await Promise.all([
-        redis.get(REDIS_KEYS.currentPlayer(roomId)),
-        redis.get(REDIS_KEYS.currentBid(roomId)),
-        redis.get(REDIS_KEYS.currentBidder(roomId)),
-        redis.get(REDIS_KEYS.auctionState(roomId)),
-      ]);
+        // Read entire auction state from Redis in parallel (~1ms total)
+        const [playerJson, currentBidStr, currentBidder, auctionState] =
+          await Promise.all([
+            redis.get(REDIS_KEYS.currentPlayer(roomId)),
+            redis.get(REDIS_KEYS.currentBid(roomId)),
+            redis.get(REDIS_KEYS.currentBidder(roomId)),
+            redis.get(REDIS_KEYS.auctionState(roomId)),
+          ]);
 
-      const timerService = getTimerService(io);
-      const secondsLeft = await timerService.getRemainingSeconds(roomId);
+        const timerService = getTimerService(io);
+        const secondsLeft = await timerService.getRemainingSeconds(roomId);
 
-      const currentPlayer = playerJson ? JSON.parse(playerJson) as Player : null;
+        const currentPlayer = playerJson
+          ? (JSON.parse(playerJson) as Player)
+          : null;
 
-      // Load my franchise state
-      const franchise = socket.data.franchise as FranchiseName | undefined;
-      const myFranchiseState = franchise
-        ? await loadFranchiseState(roomId, franchise)
-        : null;
+        // Load my franchise state
+        const franchise = socket.data.franchise as FranchiseName | undefined;
+        const myFranchiseState = franchise
+          ? await loadFranchiseState(roomId, franchise)
+          : null;
 
-      // Get queue info
-      const cachedQueue = await redis.get(REDIS_KEYS.auctionQueue(roomId));
-      const queue = cachedQueue ? JSON.parse(cachedQueue) : [];
-      const currentPosition = currentPlayer
-        ? queue.findIndex((e: { player: Player }) => e.player.id === currentPlayer.id) + 1
-        : 0;
+        // Get queue info
+        const cachedQueue = await redis.get(REDIS_KEYS.auctionQueue(roomId));
+        const queue = cachedQueue ? JSON.parse(cachedQueue) : [];
+        const currentPosition = currentPlayer
+          ? queue.findIndex(
+              (e: { player: Player }) => e.player.id === currentPlayer.id
+            ) + 1
+          : 0;
 
-      // Emit STATE_SYNC privately to the reconnecting socket (not broadcast)
-      socket.emit(SOCKET_EVENTS.STATE_SYNC, {
-        currentPlayer,
-        currentBidLakhs: parseInt(currentBidStr ?? '0', 10),
-        currentBidder: (currentBidder as FranchiseName | null) ?? null,
-        secondsLeft,
-        auctionPhase: queue[currentPosition - 1]?.phase ?? 'general',
-        auctionState: (auctionState as 'idle' | 'player_up' | 'bidding' | 'sold' | 'complete') ?? 'idle',
-        myFranchiseState: myFranchiseState ?? undefined,
-        queuePosition: currentPosition,
-        queueTotal: queue.length,
-      });
+        // Emit STATE_SYNC privately to the reconnecting socket (not broadcast)
+        socket.emit(SOCKET_EVENTS.STATE_SYNC, {
+          currentPlayer,
+          currentBidLakhs: parseInt(currentBidStr ?? '0', 10),
+          currentBidder: (currentBidder as FranchiseName | null) ?? null,
+          secondsLeft,
+          auctionPhase: queue[currentPosition - 1]?.phase ?? 'general',
+          auctionState:
+            (auctionState as
+              'idle' | 'player_up' | 'bidding' | 'sold' | 'complete') ?? 'idle',
+          myFranchiseState: myFranchiseState ?? undefined,
+          queuePosition: currentPosition,
+          queueTotal: queue.length,
+        });
 
-      console.info(`[Auction] State sync sent to ${username} for room ${roomCode}`);
-    } catch (err) {
-      console.error('[AuctionHandler] State sync error:', err);
+        console.info(
+          `[Auction] State sync sent to ${username} for room ${roomCode}`
+        );
+      } catch (err) {
+        console.error('[AuctionHandler] State sync error:', err);
+      }
     }
-  });
+  );
 
   // ─── host:control ───────────────────────────────────────────────────────────
-  socket.on('host:control', async (payload: { roomCode: string; action: 'pause' | 'resume' | 'skip' | 'extend' }) => {
-    try {
-      const { roomCode, action } = payload;
-      const room = await getRoomByCode(roomCode);
-      if (!room) return;
+  socket.on(
+    'host:control',
+    async (payload: {
+      roomCode: string;
+      action: 'pause' | 'resume' | 'skip' | 'extend';
+    }) => {
+      try {
+        const { roomCode, action } = payload;
+        const room = await getRoomByCode(roomCode);
+        if (!room) return;
 
-      // Verify user is the host of the room
-      if (room.host_user_id !== socket.data.user.id) {
-        socket.emit('host:control_error', { message: 'Only the host can control the auction.' });
-        return;
-      }
-
-      const roomId = room.id;
-      const engine = getAuctionEngine(roomId, io);
-      const timerService = getTimerService(io);
-
-      if (action === 'pause') {
-        const remaining = await timerService.getRemainingSeconds(roomId);
-        if (remaining > 0) {
-          timerService.clearTimer(roomId);
-          await redis.set(REDIS_KEYS.timerDeadline(roomId) + ':paused', remaining.toString());
-          await redis.set(REDIS_KEYS.auctionState(roomId), 'paused');
-          io.to(roomCode).emit(SOCKET_EVENTS.TIMER_TICK, { roomId, secondsLeft: remaining });
-          io.to(roomCode).emit('auction:paused', { secondsLeft: remaining });
-          console.info(`[HostControl] Auction paused by host for room ${roomCode}`);
+        // Verify user is the host of the room
+        if (room.host_user_id !== socket.data.user.id) {
+          socket.emit('host:control_error', {
+            message: 'Only the host can control the auction.',
+          });
+          return;
         }
-      } else if (action === 'resume') {
-        const pausedStr = await redis.get(REDIS_KEYS.timerDeadline(roomId) + ':paused');
-        const remaining = pausedStr ? parseInt(pausedStr, 10) : 0;
-        if (remaining > 0) {
+
+        const roomId = room.id;
+        const engine = getAuctionEngine(roomId, io);
+        const timerService = getTimerService(io);
+
+        if (action === 'pause') {
+          const remaining = await timerService.getRemainingSeconds(roomId);
+          if (remaining > 0) {
+            timerService.clearTimer(roomId);
+            await redis.set(
+              REDIS_KEYS.timerDeadline(roomId) + ':paused',
+              remaining.toString()
+            );
+            await redis.set(REDIS_KEYS.auctionState(roomId), 'paused');
+            io.to(roomCode).emit(SOCKET_EVENTS.TIMER_TICK, {
+              roomId,
+              secondsLeft: remaining,
+            });
+            io.to(roomCode).emit('auction:paused', { secondsLeft: remaining });
+            console.info(
+              `[HostControl] Auction paused by host for room ${roomCode}`
+            );
+          }
+        } else if (action === 'resume') {
+          const pausedStr = await redis.get(
+            REDIS_KEYS.timerDeadline(roomId) + ':paused'
+          );
+          const remaining = pausedStr ? parseInt(pausedStr, 10) : 0;
+          if (remaining > 0) {
+            await redis.del(REDIS_KEYS.timerDeadline(roomId) + ':paused');
+            await redis.set(REDIS_KEYS.auctionState(roomId), 'bidding');
+            io.to(roomCode).emit('auction:resumed', { secondsLeft: remaining });
+
+            await timerService.startTimer(roomId, remaining, async () => {
+              const { getNextPlayer } =
+                await import('../../services/queueManager');
+              const entry = await getNextPlayer(roomId);
+              if (entry) {
+                await engine.handleTimerExpiry(entry);
+              }
+            });
+            console.info(
+              `[HostControl] Auction resumed by host for room ${roomCode}`
+            );
+          }
+        } else if (action === 'skip') {
+          // Stop timer
+          timerService.clearTimer(roomId);
+          await redis.del(REDIS_KEYS.timerDeadline(roomId));
           await redis.del(REDIS_KEYS.timerDeadline(roomId) + ':paused');
-          await redis.set(REDIS_KEYS.auctionState(roomId), 'bidding');
-          io.to(roomCode).emit('auction:resumed', { secondsLeft: remaining });
-          
-          await timerService.startTimer(roomId, remaining, async () => {
-            const { getNextPlayer } = await import('../../services/queueManager');
+
+          const { getNextPlayer } = await import('../../services/queueManager');
+          const entry = await getNextPlayer(roomId);
+          if (entry) {
+            await engine.processPlayerUnsold(entry);
+            console.info(
+              `[HostControl] Player skipped by host for room ${roomCode}`
+            );
+          }
+        } else if (action === 'extend') {
+          const remaining = await timerService.getRemainingSeconds(roomId);
+          const newDuration = remaining + 30;
+
+          io.to(roomCode).emit(SOCKET_EVENTS.TIMER_TICK, {
+            roomId,
+            secondsLeft: newDuration,
+          });
+          io.to(roomCode).emit('auction:extended', {
+            secondsLeft: newDuration,
+          });
+
+          await timerService.startTimer(roomId, newDuration, async () => {
+            const { getNextPlayer } =
+              await import('../../services/queueManager');
             const entry = await getNextPlayer(roomId);
             if (entry) {
               await engine.handleTimerExpiry(entry);
             }
           });
-          console.info(`[HostControl] Auction resumed by host for room ${roomCode}`);
+          console.info(
+            `[HostControl] Timer extended (+30s) by host for room ${roomCode}`
+          );
         }
-      } else if (action === 'skip') {
-        // Stop timer
-        timerService.clearTimer(roomId);
-        await redis.del(REDIS_KEYS.timerDeadline(roomId));
-        await redis.del(REDIS_KEYS.timerDeadline(roomId) + ':paused');
-        
-        const { getNextPlayer } = await import('../../services/queueManager');
-        const entry = await getNextPlayer(roomId);
-        if (entry) {
-          await engine.processPlayerUnsold(entry);
-          console.info(`[HostControl] Player skipped by host for room ${roomCode}`);
-        }
-      } else if (action === 'extend') {
-        const remaining = await timerService.getRemainingSeconds(roomId);
-        const newDuration = remaining + 30;
-        
-        io.to(roomCode).emit(SOCKET_EVENTS.TIMER_TICK, { roomId, secondsLeft: newDuration });
-        io.to(roomCode).emit('auction:extended', { secondsLeft: newDuration });
-        
-        await timerService.startTimer(roomId, newDuration, async () => {
-          const { getNextPlayer } = await import('../../services/queueManager');
-          const entry = await getNextPlayer(roomId);
-          if (entry) {
-            await engine.handleTimerExpiry(entry);
-          }
-        });
-        console.info(`[HostControl] Timer extended (+30s) by host for room ${roomCode}`);
+      } catch (err) {
+        console.error('[HostControl] Error in host:control:', err);
       }
-    } catch (err) {
-      console.error('[HostControl] Error in host:control:', err);
     }
-  });
+  );
 }
-

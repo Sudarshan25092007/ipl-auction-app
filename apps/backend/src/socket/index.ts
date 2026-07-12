@@ -26,7 +26,10 @@
  */
 import { Server } from 'socket.io';
 import type { Server as HttpServer } from 'http';
-import { socketAuthMiddleware, type AuthenticatedSocket } from './middleware/socketAuth';
+import {
+  socketAuthMiddleware,
+  type AuthenticatedSocket,
+} from './middleware/socketAuth';
 import { registerRoomHandlers } from './handlers/roomHandler';
 import { registerDisconnectHandler } from './handlers/disconnectHandler';
 import { registerAuctionHandlers } from './handlers/auctionHandler';
@@ -37,8 +40,8 @@ export function initSocketServer(httpServer: HttpServer): Server {
       origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
       credentials: true,
     },
-    pingTimeout: 5_000,    // Disconnect if no pong in 5s
-    pingInterval: 25_000,  // Ping every 25s
+    pingTimeout: 5_000, // Disconnect if no pong in 5s
+    pingInterval: 25_000, // Ping every 25s
   });
 
   // ─── Global Auth Middleware ─────────────────────────────────────────────────
@@ -51,7 +54,9 @@ export function initSocketServer(httpServer: HttpServer): Server {
     const authedSocket = socket as AuthenticatedSocket;
     const { username, id } = authedSocket.data.user;
 
-    console.info(`[Socket] Connected: ${socket.id} | user: ${username} (${id})`);
+    console.info(
+      `[Socket] Connected: ${socket.id} | user: ${username} (${id})`
+    );
 
     // ── Phase 3: Room lifecycle handlers (join, franchise_select, start_auction)
     registerRoomHandlers(io, authedSocket);

@@ -34,8 +34,8 @@ if (!process.env.DATABASE_URL) {
 
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  max: 10,                       // Maximum open connections in the pool
-  idleTimeoutMillis: 30_000,     // Close connections idle for 30s (frees resources)
+  max: 10, // Maximum open connections in the pool
+  idleTimeoutMillis: 30_000, // Close connections idle for 30s (frees resources)
   connectionTimeoutMillis: 2_000, // Throw if no connection available in 2s
 });
 

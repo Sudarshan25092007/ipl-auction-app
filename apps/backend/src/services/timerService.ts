@@ -72,7 +72,12 @@ export class TimerService {
     const deadlineMs = Date.now() + durationSeconds * 1_000;
 
     // Store absolute deadline in Redis — crash-safe
-    await redis.set(REDIS_KEYS.timerDeadline(roomId), deadlineMs.toString(), 'EX', durationSeconds + 60);
+    await redis.set(
+      REDIS_KEYS.timerDeadline(roomId),
+      deadlineMs.toString(),
+      'EX',
+      durationSeconds + 60
+    );
 
     // Emit first tick immediately (client shows full duration from the start)
     this.io.to(roomId).emit(SOCKET_EVENTS.TIMER_TICK, {
@@ -86,7 +91,9 @@ export class TimerService {
       const secondsLeft = Math.max(0, Math.ceil((deadlineMs - now) / 1_000));
 
       // Emit tick to all room members
-      this.io.to(roomId).emit(SOCKET_EVENTS.TIMER_TICK, { roomId, secondsLeft });
+      this.io
+        .to(roomId)
+        .emit(SOCKET_EVENTS.TIMER_TICK, { roomId, secondsLeft });
 
       if (secondsLeft <= 0) {
         // Timer expired — stop the interval and invoke the expiry callback
@@ -96,22 +103,32 @@ export class TimerService {
         try {
           await onExpiry();
         } catch (err) {
-          console.error(`[TimerService] onExpiry error for room ${roomId}:`, err);
+          console.error(
+            `[TimerService] onExpiry error for room ${roomId}:`,
+            err
+          );
         }
       }
     }, 1_000);
 
     this.timers.set(roomId, { interval, deadlineMs });
-    console.info(`[TimerService] Started ${durationSeconds}s timer for room ${roomId}`);
+    console.info(
+      `[TimerService] Started ${durationSeconds}s timer for room ${roomId}`
+    );
   }
 
   /**
    * Reset the timer for a room (called when a bid is accepted).
    * Clears the existing interval and starts a new one at BID_RESET_TIMER_SECONDS (10s).
    */
-  async resetTimer(roomId: string, onExpiry: () => Promise<void>): Promise<void> {
+  async resetTimer(
+    roomId: string,
+    onExpiry: () => Promise<void>
+  ): Promise<void> {
     await this.startTimer(roomId, BID_RESET_TIMER_SECONDS, onExpiry);
-    console.info(`[TimerService] Timer reset to ${BID_RESET_TIMER_SECONDS}s for room ${roomId} (bid accepted)`);
+    console.info(
+      `[TimerService] Timer reset to ${BID_RESET_TIMER_SECONDS}s for room ${roomId} (bid accepted)`
+    );
   }
 
   /**

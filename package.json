@@ -5,13 +5,33 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
-    "typecheck": "turbo run typecheck",
-    "lint": "turbo run lint",
+    "clean": "turbo run clean && rm -rf node_modules",
     "test": "turbo run test",
-    "clean": "turbo run clean && rm -rf node_modules"
+    "test:backend": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
-    "turbo": "^2.9.16"
+    "@types/node": "^26.1.1",
+    "@types/pg": "^8.20.0",
+    "@types/react": "^19.2.17",
+    "@types/supertest": "^7.2.0",
+    "@vitest/ui": "^4.1.10",
+    "dotenv": "^16.6.1",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.35",
+    "eslint-config-prettier": "^10.1.8",
+    "next": "14.2.35",
+    "pg": "^8.21.0",
+    "prettier": "^3.9.5",
+    "supertest": "^7.2.2",
+    "turbo": "^2.9.16",
+    "typescript": "^5.4.5",
+    "vitest": "^4.1.10"
   },
   "engines": {
     "node": ">=20.0.0",

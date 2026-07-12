@@ -13,9 +13,10 @@ if (!dbUrl) {
 async function run() {
   const client = new Client({
     connectionString: dbUrl,
-    ssl: dbUrl.includes('supabase.co') || dbUrl.includes('pooler.supabase.com')
-      ? { rejectUnauthorized: false }
-      : undefined,
+    ssl:
+      dbUrl.includes('supabase.co') || dbUrl.includes('pooler.supabase.com')
+        ? { rejectUnauthorized: false }
+        : undefined,
   });
 
   try {
@@ -23,12 +24,20 @@ async function run() {
     console.info('🔌 Connected to database. Applying constraint patch...');
 
     // Drop old constraint
-    await client.query('ALTER TABLE room_members DROP CONSTRAINT room_members_unique_franchise_per_room;');
-    console.info('✅ Dropped old constraint: room_members_unique_franchise_per_room');
+    await client.query(
+      'ALTER TABLE room_members DROP CONSTRAINT room_members_unique_franchise_per_room;'
+    );
+    console.info(
+      '✅ Dropped old constraint: room_members_unique_franchise_per_room'
+    );
 
     // Recreate as standard UNIQUE constraint (permits multiple null values)
-    await client.query('ALTER TABLE room_members ADD CONSTRAINT room_members_unique_franchise_per_room UNIQUE (room_id, franchise);');
-    console.info('✅ Recreated standard UNIQUE constraint on (room_id, franchise)');
+    await client.query(
+      'ALTER TABLE room_members ADD CONSTRAINT room_members_unique_franchise_per_room UNIQUE (room_id, franchise);'
+    );
+    console.info(
+      '✅ Recreated standard UNIQUE constraint on (room_id, franchise)'
+    );
 
     console.info('🎉 Constraint fixed successfully!');
   } catch (error) {

@@ -43,9 +43,22 @@ import type { FranchiseName } from '@ipl-auction/shared';
 import { redis } from '../redis/client';
 import { REDIS_KEYS } from '../redis/keys';
 import { getTimerService } from './timerService';
-import { getNextPlayer, advanceQueue, detectPhaseTransition, type QueueEntry } from './queueManager';
-import { initAllFranchiseStates, deductFromFranchiseState, loadAllFranchiseStates } from './franchiseStateService';
-import { recordPlayerSold, appendBidEvent, getRoomMemberByFranchise } from '../db/queries/auction';
+import {
+  getNextPlayer,
+  advanceQueue,
+  detectPhaseTransition,
+  type QueueEntry,
+} from './queueManager';
+import {
+  initAllFranchiseStates,
+  deductFromFranchiseState,
+  loadAllFranchiseStates,
+} from './franchiseStateService';
+import {
+  recordPlayerSold,
+  appendBidEvent,
+  getRoomMemberByFranchise,
+} from '../db/queries/auction';
 import { updateRoomStatus } from '../db/queries/rooms';
 import { getMembersForRoom } from '../db/queries/rooms';
 
@@ -108,7 +121,10 @@ export class AuctionEngine {
     const { player, phase, position } = nextEntry;
 
     // Store current player in Redis
-    await redis.set(REDIS_KEYS.currentPlayer(this.roomId), JSON.stringify(player));
+    await redis.set(
+      REDIS_KEYS.currentPlayer(this.roomId),
+      JSON.stringify(player)
+    );
     await redis.set(REDIS_KEYS.auctionState(this.roomId), 'player_up');
     await redis.set(REDIS_KEYS.currentBid(this.roomId), '0');
     await redis.del(REDIS_KEYS.currentBidder(this.roomId));
@@ -117,7 +133,9 @@ export class AuctionEngine {
     const cachedQueue = await redis.get(REDIS_KEYS.auctionQueue(this.roomId));
     const queueTotal = cachedQueue ? JSON.parse(cachedQueue).length : 0;
 
-    console.info(`[AuctionEngine] Player up: ${player.name} (${phase}, position ${position}/${queueTotal})`);
+    console.info(
+      `[AuctionEngine] Player up: ${player.name} (${phase}, position ${position}/${queueTotal})`
+    );
 
     // Emit to all clients in the room
     this.io.to(this.roomId).emit(SOCKET_EVENTS.PLAYER_UP, {
@@ -152,15 +170,24 @@ export class AuctionEngine {
     try {
       const currentBidStr = await redis.get(REDIS_KEYS.currentBid(this.roomId));
       const currentBidLakhs = parseInt(currentBidStr ?? '0', 10);
-      const currentBidder = await redis.get(REDIS_KEYS.currentBidder(this.roomId));
+      const currentBidder = await redis.get(
+        REDIS_KEYS.currentBidder(this.roomId)
+      );
 
       if (currentBidLakhs >= entry.player.basePriceLakhs && currentBidder) {
-        await this.processPlayerSold(entry, currentBidLakhs, currentBidder as FranchiseName);
+        await this.processPlayerSold(
+          entry,
+          currentBidLakhs,
+          currentBidder as FranchiseName
+        );
       } else {
         await this.processPlayerUnsold(entry);
       }
     } catch (err) {
-      console.error(`[AuctionEngine] Timer expiry error for room ${this.roomId}:`, err);
+      console.error(
+        `[AuctionEngine] Timer expiry error for room ${this.roomId}:`,
+        err
+      );
     }
   }
 
@@ -172,14 +199,21 @@ export class AuctionEngine {
     winningFranchise: FranchiseName
   ): Promise<void> {
     const { player, position } = entry;
-    console.info(`[AuctionEngine] SOLD: ${player.name} to ${winningFranchise} for ₹${priceLakhs}L`);
+    console.info(
+      `[AuctionEngine] SOLD: ${player.name} to ${winningFranchise} for ₹${priceLakhs}L`
+    );
 
     await redis.set(REDIS_KEYS.auctionState(this.roomId), 'sold');
 
     // Get the room_member row for the winning franchise
-    const member = await getRoomMemberByFranchise(this.roomId, winningFranchise);
+    const member = await getRoomMemberByFranchise(
+      this.roomId,
+      winningFranchise
+    );
     if (!member) {
-      console.error(`[AuctionEngine] No room member found for franchise ${winningFranchise}`);
+      console.error(
+        `[AuctionEngine] No room member found for franchise ${winningFranchise}`
+      );
       await this.processPlayerUnsold(entry);
       return;
     }
@@ -228,7 +262,10 @@ export class AuctionEngine {
       priceLakhs,
       franchise: winningFranchise,
     }).catch((err) => {
-      console.error(`[AuctionEngine] CRITICAL: Failed to record sale of ${player.name} to DB:`, err);
+      console.error(
+        `[AuctionEngine] CRITICAL: Failed to record sale of ${player.name} to DB:`,
+        err
+      );
       // TODO Phase 6: trigger reconciliation job
     });
 
@@ -292,11 +329,14 @@ export class AuctionEngine {
       members
         .filter((m) => m.franchise)
         .map(async (m) => {
-          const cached = await redis.get(REDIS_KEYS.franchiseState(this.roomId, m.franchise!));
+          const cached = await redis.get(
+            REDIS_KEYS.franchiseState(this.roomId, m.franchise!)
+          );
           const state = cached ? JSON.parse(cached) : null;
           return {
             franchise: m.franchise as FranchiseName,
-            walletRemainingLakhs: state?.walletRemainingLakhs ?? m.wallet_remaining_lakhs,
+            walletRemainingLakhs:
+              state?.walletRemainingLakhs ?? m.wallet_remaining_lakhs,
           };
         })
     );

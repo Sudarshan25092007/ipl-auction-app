@@ -35,12 +35,12 @@ import type { JwtPayload } from '@ipl-auction/shared';
 // socket.data is `any` by default — we define its exact shape.
 export interface SocketData {
   user: {
-    id: string;       // = JwtPayload.sub (UUID)
+    id: string; // = JwtPayload.sub (UUID)
     email: string;
     username: string;
   };
-  roomCode: string | null;    // Set after room:join event
-  franchise: string | null;   // Set after room:franchise_select event
+  roomCode: string | null; // Set after room:join event
+  franchise: string | null; // Set after room:franchise_select event
 }
 
 // Extend Socket type for type-safe socket.data access in handlers
@@ -61,7 +61,9 @@ export function socketAuthMiddleware(socket: Socket, next: NextFn): void {
   const token = socket.handshake.auth?.token as string | undefined;
 
   if (!token) {
-    next(new Error('Authentication error: No token provided in socket handshake.'));
+    next(
+      new Error('Authentication error: No token provided in socket handshake.')
+    );
     return;
   }
 
@@ -90,7 +92,11 @@ export function socketAuthMiddleware(socket: Socket, next: NextFn): void {
     next(); // ✅ Connection admitted
   } catch (err) {
     if (err instanceof jwt.TokenExpiredError) {
-      next(new Error('Authentication error: Token has expired. Please log in again.'));
+      next(
+        new Error(
+          'Authentication error: Token has expired. Please log in again.'
+        )
+      );
     } else if (err instanceof jwt.JsonWebTokenError) {
       next(new Error('Authentication error: Invalid token.'));
     } else {

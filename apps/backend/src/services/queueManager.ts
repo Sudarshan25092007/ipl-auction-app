@@ -113,7 +113,9 @@ export async function initializeQueue(roomId: string): Promise<void> {
   await redis.set(REDIS_KEYS.auctionState(roomId), 'idle');
   await redis.set(REDIS_KEYS.currentBid(roomId), '0');
 
-  console.info(`[QueueManager] Queue initialized: ${shuffledMarquee.length} marquee + ${shuffledGeneral.length} general players`);
+  console.info(
+    `[QueueManager] Queue initialized: ${shuffledMarquee.length} marquee + ${shuffledGeneral.length} general players`
+  );
 }
 
 // ─── getNextPlayer ─────────────────────────────────────────────────────────────
@@ -125,7 +127,9 @@ export async function initializeQueue(roomId: string): Promise<void> {
  * @param roomId  The room UUID
  * @returns       The next QueueEntry or null
  */
-export async function getNextPlayer(roomId: string): Promise<QueueEntry | null> {
+export async function getNextPlayer(
+  roomId: string
+): Promise<QueueEntry | null> {
   // 1. Get current position from DB (authoritative pointer)
   const roomResult = await pool.query<{ current_queue_position: number }>(
     `SELECT current_queue_position FROM rooms WHERE id = $1`,
@@ -141,10 +145,17 @@ export async function getNextPlayer(roomId: string): Promise<QueueEntry | null> 
     queue = JSON.parse(cached) as QueueEntry[];
   } else {
     // 3. Redis miss → rebuild from DB (cold start / eviction fallback)
-    console.warn(`[QueueManager] Redis cache miss for room ${roomId} — falling back to DB`);
+    console.warn(
+      `[QueueManager] Redis cache miss for room ${roomId} — falling back to DB`
+    );
     queue = await rebuildQueueFromDB(roomId);
     if (queue) {
-      await redis.set(REDIS_KEYS.auctionQueue(roomId), JSON.stringify(queue), 'EX', 86_400);
+      await redis.set(
+        REDIS_KEYS.auctionQueue(roomId),
+        JSON.stringify(queue),
+        'EX',
+        86_400
+      );
     }
   }
 
@@ -208,7 +219,9 @@ export async function detectPhaseTransition(roomId: string): Promise<boolean> {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-async function rebuildQueueFromDB(roomId: string): Promise<QueueEntry[] | null> {
+async function rebuildQueueFromDB(
+  roomId: string
+): Promise<QueueEntry[] | null> {
   // This is the cold-start fallback — fetch queue order from DB + player details
   const result = await pool.query<{
     player_id: string;

@@ -32,7 +32,11 @@ import type {
 } from '@ipl-auction/shared';
 import { useAuctionStore } from '../stores/auctionStore';
 
-export function useAuction(socket: Socket | null, roomCode: string, isConnected: boolean) {
+export function useAuction(
+  socket: Socket | null,
+  roomCode: string,
+  isConnected: boolean
+) {
   const {
     setPlayerUp,
     updateBid,

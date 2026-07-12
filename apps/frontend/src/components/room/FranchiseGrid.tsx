@@ -58,11 +58,12 @@ export function FranchiseGrid({
             className={`
               relative group flex flex-col items-center gap-2 p-4 rounded-xl border-2
               transition-all duration-200 text-center
-              ${isMine
-                ? 'border-green-400 bg-green-400/10 shadow-lg shadow-green-400/20 scale-105'
-                : isClaimed
-                  ? 'border-white/10 bg-white/5 opacity-50 cursor-not-allowed'
-                  : 'border-white/20 bg-white/5 hover:border-orange-400/50 hover:bg-white/10 hover:scale-105 cursor-pointer'
+              ${
+                isMine
+                  ? 'border-green-400 bg-green-400/10 shadow-lg shadow-green-400/20 scale-105'
+                  : isClaimed
+                    ? 'border-white/10 bg-white/5 opacity-50 cursor-not-allowed'
+                    : 'border-white/20 bg-white/5 hover:border-orange-400/50 hover:bg-white/10 hover:scale-105 cursor-pointer'
               }
             `}
             style={{

@@ -4,7 +4,11 @@
  * MAJOR FUNCTION: Reusable full-page loading spinner.
  * Used during socket connection, initial data load, and transitions.
  */
-export function LoadingSpinner({ message = 'Loading...' }: { message?: string }) {
+export function LoadingSpinner({
+  message = 'Loading...',
+}: {
+  message?: string;
+}) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 flex flex-col items-center justify-center gap-4">
       <div className="relative">

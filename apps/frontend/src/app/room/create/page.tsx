@@ -48,10 +48,14 @@ export default function CreateRoomPage() {
     setError(null);
     setIsCreating(true);
     try {
-      const data = await fetchApi<CreateRoomResponse>('/rooms', { method: 'POST' });
+      const data = await fetchApi<CreateRoomResponse>('/rooms', {
+        method: 'POST',
+      });
       router.push(`/room/${data.roomCode}/lobby`);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to create room.');
+      setError(
+        err instanceof ApiError ? err.message : 'Failed to create room.'
+      );
       setIsCreating(false);
     }
   }
@@ -64,21 +68,31 @@ export default function CreateRoomPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-yellow-400 to-orange-500 mb-4 shadow-lg shadow-orange-500/30">
             <span className="text-3xl">🏟️</span>
           </div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">IPL Mock Auction</h1>
-          <p className="text-slate-400 mt-2">Host a live franchise auction with friends</p>
+          <h1 className="text-3xl font-bold text-white tracking-tight">
+            IPL Mock Auction
+          </h1>
+          <p className="text-slate-400 mt-2">
+            Host a live franchise auction with friends
+          </p>
         </div>
 
         {/* Action card */}
         <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 shadow-2xl space-y-6">
           <div>
-            <h2 className="text-xl font-semibold text-white">Start a new auction</h2>
+            <h2 className="text-xl font-semibold text-white">
+              Start a new auction
+            </h2>
             <p className="text-slate-400 text-sm mt-1">
-              A 6-character invite code will be generated. Share it with up to 10 friends.
+              A 6-character invite code will be generated. Share it with up to
+              10 friends.
             </p>
           </div>
 
           {error && (
-            <div role="alert" className="flex gap-2.5 items-start px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-300 text-sm">
+            <div
+              role="alert"
+              className="flex gap-2.5 items-start px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-300 text-sm"
+            >
               <span className="shrink-0">⚠️</span>
               <span>{error}</span>
             </div>

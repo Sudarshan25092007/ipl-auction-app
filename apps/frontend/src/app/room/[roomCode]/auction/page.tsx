@@ -47,7 +47,10 @@ export default function AuctionPage({
   const [phaseTransitionData, setPhaseTransitionData] = useState<{
     from: string;
     to: string;
-    remainingBudgetsSummary: Array<{ franchise: FranchiseName; walletRemainingLakhs: number }>;
+    remainingBudgetsSummary: Array<{
+      franchise: FranchiseName;
+      walletRemainingLakhs: number;
+    }>;
   } | null>(null);
 
   // Unwrap params
@@ -131,7 +134,9 @@ export default function AuctionPage({
   };
 
   // 4. Handle Host control commands
-  const handleHostControl = (action: 'pause' | 'resume' | 'skip' | 'extend') => {
+  const handleHostControl = (
+    action: 'pause' | 'resume' | 'skip' | 'extend'
+  ) => {
     if (!socket || !isConnected || !isHost) return;
     socket.emit('host:control', { roomCode, action });
   };
@@ -170,7 +175,10 @@ export default function AuctionPage({
             🏏 IPL Live Auction Board
           </h1>
           <span className="px-3 py-1 rounded-full text-xs font-bold bg-white/5 border border-white/10 text-slate-400">
-            Room: <span className="font-mono text-cyan-400 select-all">{roomCode}</span>
+            Room:{' '}
+            <span className="font-mono text-cyan-400 select-all">
+              {roomCode}
+            </span>
           </span>
         </div>
 
@@ -178,7 +186,9 @@ export default function AuctionPage({
         {currentPlayer && (
           <div className="flex items-center gap-3">
             <span className="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
-              {auctionPhase === 'marquee' ? '👑 Marquee Tier' : '⚡ General Draft'}
+              {auctionPhase === 'marquee'
+                ? '👑 Marquee Tier'
+                : '⚡ General Draft'}
             </span>
             <span className="text-xs text-slate-400 font-bold font-mono">
               Queue: {queuePosition}/{queueTotal}
@@ -188,7 +198,9 @@ export default function AuctionPage({
 
         {/* Connection status */}
         <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
+          <div
+            className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`}
+          />
           <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider">
             {isConnected ? 'Connected' : 'Reconnecting...'}
           </span>
@@ -197,7 +209,6 @@ export default function AuctionPage({
 
       {/* Main Panel Grid */}
       <main className="flex-1 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-hidden">
-        
         {/* LEFT COLUMN: INSPECT OTHERS (4/12 grid) */}
         <section className="lg:col-span-3 flex flex-col h-full overflow-hidden">
           <div className="flex-1 flex flex-col bg-slate-900/40 border border-white/5 rounded-3xl overflow-hidden p-4 space-y-4">
@@ -239,17 +250,24 @@ export default function AuctionPage({
           {auctionState === 'idle' ? (
             <div className="flex-1 flex flex-col items-center justify-center border border-white/5 bg-slate-900/30 rounded-3xl p-8 text-center space-y-4">
               <span className="text-6xl animate-bounce">⏳</span>
-              <h2 className="text-2xl font-black text-white">Draft is Pending</h2>
+              <h2 className="text-2xl font-black text-white">
+                Draft is Pending
+              </h2>
               <p className="text-slate-400 text-sm max-w-sm">
-                Wait for the host to press "Start Auction" in the lobby. The auction will initiate as soon as all managers selection resolves.
+                Wait for the host to press "Start Auction" in the lobby. The
+                auction will initiate as soon as all managers selection
+                resolves.
               </p>
             </div>
           ) : auctionState === 'complete' ? (
             <div className="flex-1 flex flex-col items-center justify-center border border-white/5 bg-slate-900/30 rounded-3xl p-8 text-center space-y-4">
               <span className="text-6xl">🏆</span>
-              <h2 className="text-2xl font-black text-white font-mono">Auction Completed!</h2>
+              <h2 className="text-2xl font-black text-white font-mono">
+                Auction Completed!
+              </h2>
               <p className="text-slate-400 text-sm max-w-sm">
-                The live draft queue has been fully resolved. Click the button below to see the final squads and spends.
+                The live draft queue has been fully resolved. Click the button
+                below to see the final squads and spends.
               </p>
               <button
                 onClick={() => router.push(`/room/${roomCode}/results`)}
@@ -261,7 +279,6 @@ export default function AuctionPage({
           ) : (
             /* Active Live Auction Block */
             <div className="flex-1 flex flex-col justify-between p-4 bg-slate-900/20 border border-white/5 rounded-3xl overflow-hidden">
-              
               {/* Player Up Card */}
               {currentPlayer && <PlayerCard player={currentPlayer} />}
 
@@ -316,7 +333,9 @@ export default function AuctionPage({
 
                 <button
                   onClick={() => handleHostControl('extend')}
-                  disabled={auctionState === 'idle' || auctionState === 'paused'}
+                  disabled={
+                    auctionState === 'idle' || auctionState === 'paused'
+                  }
                   className="py-2.5 rounded-xl font-bold text-xs bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/35 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transition-all text-center"
                 >
                   ⏳ Extend +30s
@@ -335,12 +354,12 @@ export default function AuctionPage({
               <span className="text-3xl mb-1">👀</span>
               <p className="text-sm font-semibold">Spectator Mode</p>
               <p className="text-xs text-slate-600 mt-1 max-w-[160px]">
-                You did not select a franchise. You are currently viewing the live draft board.
+                You did not select a franchise. You are currently viewing the
+                live draft board.
               </p>
             </div>
           )}
         </section>
-
       </main>
 
       {/* OVERLAY ELEMENTS */}
@@ -357,15 +376,20 @@ export default function AuctionPage({
               Marquee Round Complete!
             </h1>
           </div>
-          
+
           <div className="max-w-2xl w-full bg-white/5 border border-white/10 rounded-3xl p-6 text-left space-y-4">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-white/5 pb-2">
               Franchise Remaining Budgets
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-64 overflow-y-auto pr-1">
               {phaseTransitionData.remainingBudgetsSummary.map((sum) => (
-                <div key={sum.franchise} className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5">
-                  <span className="text-xs font-bold text-slate-300">{sum.franchise}</span>
+                <div
+                  key={sum.franchise}
+                  className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5"
+                >
+                  <span className="text-xs font-bold text-slate-300">
+                    {sum.franchise}
+                  </span>
                   <span className="text-xs font-black text-teal-400 font-mono">
                     {formatLakhs(sum.walletRemainingLakhs)}
                   </span>

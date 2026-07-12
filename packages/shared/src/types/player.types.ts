@@ -25,12 +25,7 @@
  *   - No reverse-mapping confusion (TypeScript enum quirk)
  *   - Values are plain strings — no special deserialization needed from JSON
  */
-export type PlayerRole =
-  | 'batter'
-  | 'pacer'
-  | 'spinner'
-  | 'allrounder'
-  | 'wk'; // wicket-keeper
+export type PlayerRole = 'batter' | 'pacer' | 'spinner' | 'allrounder' | 'wk'; // wicket-keeper
 
 /**
  * Maps to the `nationality` ENUM column in the `players` DB table.
@@ -53,12 +48,12 @@ export type PlayerCategory = string;
  * No service should ever mutate player data in memory.
  */
 export interface Player {
-  readonly id: string;                   // UUID — Primary Key in players table
+  readonly id: string; // UUID — Primary Key in players table
   readonly name: string;
-  readonly category: PlayerCategory;     // Raw category string for display
-  readonly role: PlayerRole;             // Parsed role for squad composition logic
+  readonly category: PlayerCategory; // Raw category string for display
+  readonly role: PlayerRole; // Parsed role for squad composition logic
   readonly nationality: PlayerNationality;
-  readonly isMarquee: boolean;           // true = Premium Draft round player
-  readonly isCapped: boolean;            // false = uncapped Indian (different salary rules)
-  readonly basePriceLakhs: number;       // Integer. 200 = ₹2 Cr minimum bid.
+  readonly isMarquee: boolean; // true = Premium Draft round player
+  readonly isCapped: boolean; // false = uncapped Indian (different salary rules)
+  readonly basePriceLakhs: number; // Integer. 200 = ₹2 Cr minimum bid.
 }

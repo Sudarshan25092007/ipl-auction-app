@@ -79,9 +79,9 @@ export interface FranchiseState {
  * The `pricePaidLakhs` is the final winning bid — immutable once the player is sold.
  */
 export interface SquadPlayer {
-  readonly roomMemberId: string;    // FK → room_members.id
-  readonly player: Player;          // Full player details (joined from players table)
-  readonly pricePaidLakhs: number;  // Winning bid amount. Never changes after sale.
+  readonly roomMemberId: string; // FK → room_members.id
+  readonly player: Player; // Full player details (joined from players table)
+  readonly pricePaidLakhs: number; // Winning bid amount. Never changes after sale.
   readonly acquiredAt: Date;
 }
 
@@ -93,7 +93,7 @@ export interface SquadPlayer {
 export interface Squad {
   franchise: FranchiseName;
   members: SquadPlayer[];
-  walletSpentLakhs: number;         // 12000 - walletRemainingLakhs
+  walletSpentLakhs: number; // 12000 - walletRemainingLakhs
   walletRemainingLakhs: number;
 }
 

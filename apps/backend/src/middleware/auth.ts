@@ -48,7 +48,8 @@ export function jwtAuth(req: Request, res: Response, next: NextFunction): void {
   // Must be: "Authorization: Bearer eyJ..."
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     res.status(401).json({
-      error: 'Missing or malformed Authorization header. Expected: Bearer <token>',
+      error:
+        'Missing or malformed Authorization header. Expected: Bearer <token>',
     });
     return;
   }

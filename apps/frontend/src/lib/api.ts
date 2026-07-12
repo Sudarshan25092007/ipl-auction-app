@@ -92,7 +92,7 @@ export async function fetchApi<T>(
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     // Merge caller-provided headers last so they can override
-    ...(options.headers as Record<string, string> | undefined ?? {}),
+    ...((options.headers as Record<string, string> | undefined) ?? {}),
   };
 
   const response = await fetch(`${BACKEND_URL}${path}`, {
@@ -102,10 +102,13 @@ export async function fetchApi<T>(
 
   if (!response.ok) {
     // Try to parse backend error message — fall back to generic
-    const body = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+    const body = await response
+      .json()
+      .catch(() => ({ error: `HTTP ${response.status}` }));
     throw new ApiError(
       response.status,
-      (body as { error?: string }).error ?? `Request failed with status ${response.status}`
+      (body as { error?: string }).error ??
+        `Request failed with status ${response.status}`
     );
   }
 

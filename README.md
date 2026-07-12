@@ -36,9 +36,10 @@
 
 ## 🎯 About
 
-The IPL Mock Auction Platform is a **real-time concurrent auction system** built to solve the classic race-condition problem: *"What happens when two teams bid for the same player at the exact same millisecond?"*
+The IPL Mock Auction Platform is a **real-time concurrent auction system** built to solve the classic race-condition problem: _"What happens when two teams bid for the same player at the exact same millisecond?"_
 
 This project demonstrates production-grade backend engineering patterns including:
+
 - **Redis atomic operations** for race-condition-safe bid validation
 - **WebSocket pub/sub** for live bid broadcasting to all connected clients
 - **Redis Sorted Sets** for real-time leaderboard management
@@ -127,16 +128,20 @@ if (currentBudget < bidAmount) {
 await redis.decrby(budgetKey, bidAmount);
 
 // Step 4: Publish to all connected clients
-await redis.publish(`auction:${auctionId}`, JSON.stringify({
-  type: 'BID_PLACED',
-  playerId,
-  teamId,
-  amount: bidAmount,
-  timestamp: Date.now()
-}));
+await redis.publish(
+  `auction:${auctionId}`,
+  JSON.stringify({
+    type: 'BID_PLACED',
+    playerId,
+    teamId,
+    amount: bidAmount,
+    timestamp: Date.now(),
+  })
+);
 ```
 
 **Why SETNX and not SELECT FOR UPDATE?**
+
 - PostgreSQL `SELECT FOR UPDATE` creates write locks that serialize concurrent uploads — a write-throughput ceiling
 - Redis SETNX operates in memory with microsecond latency, enabling true concurrent bid processing
 - TTL on lock keys prevents deadlocks if a client disconnects mid-transaction
@@ -148,7 +153,7 @@ await redis.publish(`auction:${auctionId}`, JSON.stringify({
 redisSubscriber.subscribe(`auction:${auctionId}`);
 redisSubscriber.on('message', (channel, message) => {
   const bidEvent = JSON.parse(message);
-  wss.clients.forEach(client => {
+  wss.clients.forEach((client) => {
     if (client.readyState === WebSocket.OPEN) {
       client.send(JSON.stringify(bidEvent));
     }
@@ -157,6 +162,7 @@ redisSubscriber.on('message', (channel, message) => {
 ```
 
 **Why Pub/Sub and not polling?**
+
 - Polling creates unnecessary database load and introduces latency
 - Pub/Sub delivers bid events to all clients in <1ms after validation
 - Scales horizontally — multiple server instances can subscribe to the same Redis channel
@@ -165,21 +171,19 @@ redisSubscriber.on('message', (channel, message) => {
 
 ```typescript
 // Update leaderboard atomically on each bid
-await redis.zadd(
-  `leaderboard:${auctionId}`,
-  remainingBudget,
-  teamId
-);
+await redis.zadd(`leaderboard:${auctionId}`, remainingBudget, teamId);
 
 // Fetch top 10 teams
 const topTeams = await redis.zrevrange(
   `leaderboard:${auctionId}`,
-  0, 9,
+  0,
+  9,
   'WITHSCORES'
 );
 ```
 
 **Why Sorted Sets?**
+
 - O(log N) insertion and ranking — constant time regardless of team count
 - Atomic ZINCRBY updates prevent race conditions in leaderboard state
 - Built-in pagination (ZRANGE) for "top N" queries without application-level sorting
@@ -206,48 +210,53 @@ UNSOLD ──► ACTIVE (bid placed)
 
 ## 🛠️ Tech Stack
 
-| Layer | Technology | Purpose |
-|:---|:---|:---|
-| **Runtime** | Node.js 18+ | Server runtime |
-| **Language** | TypeScript 5.0+ | Type-safe backend code |
-| **Framework** | Express.js | HTTP API and middleware |
-| **Real-Time** | WebSocket (ws library) | Bidirectional client communication |
-| **Cache & State** | Redis 7+ | Atomic operations, pub/sub, sorted sets |
-| **Database** | PostgreSQL 15+ | Persistent auction history, audit trails |
-| **ORM** | Prisma | Type-safe database queries and migrations |
-| **Validation** | Zod | Runtime schema validation |
-| **Testing** | Jest + Supertest | Unit and integration tests |
-| **Load Testing** | Artillery | Concurrent bid stress testing |
-| **Container** | Docker + Docker Compose | Development and production deployment |
-| **CI/CD** | GitHub Actions | Lint, test, and deploy on push |
+| Layer             | Technology              | Purpose                                   |
+| :---------------- | :---------------------- | :---------------------------------------- |
+| **Runtime**       | Node.js 18+             | Server runtime                            |
+| **Language**      | TypeScript 5.0+         | Type-safe backend code                    |
+| **Framework**     | Express.js              | HTTP API and middleware                   |
+| **Real-Time**     | WebSocket (ws library)  | Bidirectional client communication        |
+| **Cache & State** | Redis 7+                | Atomic operations, pub/sub, sorted sets   |
+| **Database**      | PostgreSQL 15+          | Persistent auction history, audit trails  |
+| **ORM**           | Prisma                  | Type-safe database queries and migrations |
+| **Validation**    | Zod                     | Runtime schema validation                 |
+| **Testing**       | Jest + Supertest        | Unit and integration tests                |
+| **Load Testing**  | Artillery               | Concurrent bid stress testing             |
+| **Container**     | Docker + Docker Compose | Development and production deployment     |
+| **CI/CD**         | GitHub Actions          | Lint, test, and deploy on push            |
 
 ---
 
 ## ✨ Features
 
 ### Core Auction Engine
+
 - [x] **Atomic Bid Validation**: Redis SETNX ensures only one team wins per player under concurrent load
 - [x] **Budget Management**: Atomic decrement with insufficient-funds protection
 - [x] **Player State Machine**: UNSOLD → ACTIVE → SOLD with TTL-based expiration
 - [x] **Bid History**: Complete audit trail of all bids per player
 
 ### Real-Time Broadcasting
+
 - [x] **WebSocket Pub/Sub**: Live bid events to all connected clients in <1ms
 - [x] **Connection Resilience**: Automatic reconnection with missed event replay
 - [x] **Multi-Tab Sync**: Bid placed in one tab visible instantly in all others
 
 ### Leaderboard & Analytics
+
 - [x] **Real-Time Leaderboard**: Redis Sorted Sets with O(log N) updates
 - [x] **Team Budget Tracking**: Live remaining budget per team
 - [x] **Player Statistics**: Bid count, final price, time-to-sale
 
 ### Production Readiness
+
 - [x] **Docker Compose**: One-command local deployment (`docker-compose up`)
 - [x] **Health Checks**: Redis and PostgreSQL connection monitoring
 - [x] **Graceful Shutdown**: WebSocket cleanup and Redis connection pooling
 - [x] **Environment Configuration**: Typed config with validation
 
 ### Testing
+
 - [x] **50-Concurrent-Bid Test**: Artillery load test verifying single-winner guarantee
 - [x] **Race Condition Tests**: Simultaneous bid collision handling
 - [x] **WebSocket Integration Tests**: Connection, broadcast, and reconnection
@@ -328,24 +337,24 @@ MAX_CONCURRENT_BIDS_PER_TEAM=3
 
 ### REST Endpoints
 
-| Method | Endpoint | Description |
-|:---|:---|:---|
-| `POST` | `/api/auction/bid` | Place a bid on a player |
-| `GET` | `/api/auction/:id/leaderboard` | Get current leaderboard |
-| `GET` | `/api/auction/:id/players` | List all players with status |
-| `GET` | `/api/auction/:id/player/:playerId` | Get player details and bid history |
-| `POST` | `/api/auction/:id/finalize` | End auction and persist results |
+| Method | Endpoint                            | Description                        |
+| :----- | :---------------------------------- | :--------------------------------- |
+| `POST` | `/api/auction/bid`                  | Place a bid on a player            |
+| `GET`  | `/api/auction/:id/leaderboard`      | Get current leaderboard            |
+| `GET`  | `/api/auction/:id/players`          | List all players with status       |
+| `GET`  | `/api/auction/:id/player/:playerId` | Get player details and bid history |
+| `POST` | `/api/auction/:id/finalize`         | End auction and persist results    |
 
 ### WebSocket Events
 
-| Event | Direction | Description |
-|:---|:---|:---|
-| `BID_PLACED` | Server → Client | New bid validated and broadcast |
-| `PLAYER_SOLD` | Server → Client | Player auction concluded |
-| `LEADERBOARD_UPDATE` | Server → Client | Leaderboard position changed |
-| `AUCTION_ENDED` | Server → Client | Auction timer expired |
-| `CLIENT_CONNECT` | Client → Server | Client joining auction room |
-| `CLIENT_DISCONNECT` | Client → Server | Client leaving auction room |
+| Event                | Direction       | Description                     |
+| :------------------- | :-------------- | :------------------------------ |
+| `BID_PLACED`         | Server → Client | New bid validated and broadcast |
+| `PLAYER_SOLD`        | Server → Client | Player auction concluded        |
+| `LEADERBOARD_UPDATE` | Server → Client | Leaderboard position changed    |
+| `AUCTION_ENDED`      | Server → Client | Auction timer expired           |
+| `CLIENT_CONNECT`     | Client → Server | Client joining auction room     |
+| `CLIENT_DISCONNECT`  | Client → Server | Client leaving auction room     |
 
 ### Bid Request Schema
 
@@ -470,13 +479,13 @@ npm run test:coverage
 
 ### Test Coverage Targets
 
-| Category | Target | Status |
-|:---|:---:|:---:|
-| Bid Validation | 100% | 🟡 In Progress |
-| WebSocket Events | 100% | 🟡 In Progress |
-| Race Conditions | 100% | ✅ Passing |
-| Leaderboard Updates | 100% | 🟡 In Progress |
-| Database Persistence | 100% | 🟡 In Progress |
+| Category             | Target |     Status     |
+| :------------------- | :----: | :------------: |
+| Bid Validation       |  100%  | 🟡 In Progress |
+| WebSocket Events     |  100%  | 🟡 In Progress |
+| Race Conditions      |  100%  |   ✅ Passing   |
+| Leaderboard Updates  |  100%  | 🟡 In Progress |
+| Database Persistence |  100%  | 🟡 In Progress |
 
 ---
 
@@ -495,18 +504,19 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 ### Environment-Specific Config
 
-| Environment | Database | Redis | Notes |
-|:---|:---|:---|:---|
-| Development | Local PostgreSQL | Local Redis | Hot reload enabled |
-| Testing | Test containers | Test containers | Fresh per test suite |
-| Staging | Railway PostgreSQL | Railway Redis | CI/CD auto-deploy |
-| Production | Managed PostgreSQL | Managed Redis | Connection pooling, SSL |
+| Environment | Database           | Redis           | Notes                   |
+| :---------- | :----------------- | :-------------- | :---------------------- |
+| Development | Local PostgreSQL   | Local Redis     | Hot reload enabled      |
+| Testing     | Test containers    | Test containers | Fresh per test suite    |
+| Staging     | Railway PostgreSQL | Railway Redis   | CI/CD auto-deploy       |
+| Production  | Managed PostgreSQL | Managed Redis   | Connection pooling, SSL |
 
 ---
 
 ## 🗺️ Roadmap
 
 ### Phase 1: Core Engine (Current)
+
 - [x] Atomic bid validation with Redis SETNX
 - [x] WebSocket pub/sub for live broadcasting
 - [x] Redis Sorted Sets leaderboard
@@ -515,6 +525,7 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 - [x] 50-concurrent-bid stress test
 
 ### Phase 2: Production Hardening (Next 2 Weeks)
+
 - [ ] GitHub Actions CI/CD (lint + test on push)
 - [ ] Multi-stage Docker build for smaller images
 - [ ] Redis connection pooling and failover
@@ -524,6 +535,7 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 - [ ] Health check endpoints (/health, /ready)
 
 ### Phase 3: Scale & Features (Month 2)
+
 - [ ] Redis Streams for event sourcing (replace Pub/Sub)
 - [ ] Horizontal scaling with Redis Cluster
 - [ ] Admin dashboard for auction monitoring
@@ -532,6 +544,7 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 - [ ] Integration tests for all WebSocket events
 
 ### Phase 4: Advanced Patterns (Month 3)
+
 - [ ] Circuit breaker for external services
 - [ ] Distributed tracing (OpenTelemetry)
 - [ ] Metrics export (Prometheus + Grafana)
@@ -545,15 +558,19 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 This project is designed to answer common backend interview questions:
 
 **Q: "How would you prevent race conditions in a bidding system?"**
+
 > I used Redis SETNX for atomic lock acquisition. When a team places a bid, SETNX attempts to acquire a lock on the player. If another team holds the lock, the bid is rejected immediately. This operates in memory with microsecond latency, avoiding the write-lock ceiling of PostgreSQL SELECT FOR UPDATE.
 
 **Q: "How would you build a real-time leaderboard?"**
+
 > I used Redis Sorted Sets (ZADD/ZINCRBY). Each bid updates the team's score atomically. ZREVRANGE fetches the top N teams in O(log N) time. This avoids application-level sorting and scales to thousands of teams.
 
 **Q: "How do you handle WebSocket reconnections?"**
+
 > On connection, the client receives the current auction state (active players, leaderboard, recent bids). If the connection drops, the client reconnects and re-syncs. Missed events during disconnection are replayed from a Redis-backed event buffer.
 
 **Q: "Why Redis over PostgreSQL for bid validation?"**
+
 > PostgreSQL row locks serialize concurrent writes, creating a throughput ceiling. Redis SETNX operates in memory with no locking overhead. For high-frequency operations like bid validation, Redis provides the necessary latency and concurrency. PostgreSQL persists the final state for audit and analytics.
 
 ---

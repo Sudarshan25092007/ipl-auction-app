@@ -65,12 +65,17 @@ export default function LoginPage() {
   return (
     <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 shadow-2xl">
       <h2 className="text-xl font-semibold text-white mb-1">Welcome back</h2>
-      <p className="text-slate-400 text-sm mb-6">Sign in to your account to continue</p>
+      <p className="text-slate-400 text-sm mb-6">
+        Sign in to your account to continue
+      </p>
 
       <form onSubmit={handleSubmit} className="space-y-4" id="login-form">
         {/* Email */}
         <div>
-          <label htmlFor="login-email" className="block text-sm font-medium text-slate-300 mb-1.5">
+          <label
+            htmlFor="login-email"
+            className="block text-sm font-medium text-slate-300 mb-1.5"
+          >
             Email address
           </label>
           <input
@@ -87,7 +92,10 @@ export default function LoginPage() {
 
         {/* Password */}
         <div>
-          <label htmlFor="login-password" className="block text-sm font-medium text-slate-300 mb-1.5">
+          <label
+            htmlFor="login-password"
+            className="block text-sm font-medium text-slate-300 mb-1.5"
+          >
             Password
           </label>
           <input
@@ -126,7 +134,10 @@ export default function LoginPage() {
 
       <p className="text-center text-slate-400 text-sm mt-6">
         Don&apos;t have an account?{' '}
-        <Link href="/register" className="text-orange-400 hover:text-orange-300 font-medium transition">
+        <Link
+          href="/register"
+          className="text-orange-400 hover:text-orange-300 font-medium transition"
+        >
           Create one
         </Link>
       </p>

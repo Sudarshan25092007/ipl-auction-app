@@ -45,7 +45,10 @@ function rowToPlayer(row: PlayerRow): Player {
  * Called once per auction by queueManager.initializeQueue().
  * Returns two arrays for sequential Fisher-Yates shuffle.
  */
-export async function getAllPlayers(): Promise<{ marquee: Player[]; general: Player[] }> {
+export async function getAllPlayers(): Promise<{
+  marquee: Player[];
+  general: Player[];
+}> {
   const result = await pool.query<PlayerRow>(
     `SELECT id, name, category, role, nationality, is_marquee, is_capped, base_price_lakhs
      FROM players

@@ -10,7 +10,10 @@ try {
   currentDir = __dirname;
 }
 
-const excelPath = path.resolve(currentDir, '../../../IPL MOCK UPDATED AUCTION.xlsx');
+const excelPath = path.resolve(
+  currentDir,
+  '../../../IPL MOCK UPDATED AUCTION.xlsx'
+);
 console.log('Loading Excel from:', excelPath);
 
 const workbook = XLSX.readFile(excelPath);

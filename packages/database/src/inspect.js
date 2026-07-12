@@ -1,7 +1,10 @@
 const XLSX = require('xlsx');
 const path = require('path');
 
-const excelPath = path.resolve(__dirname, '../../../IPL MOCK UPDATED AUCTION.xlsx');
+const excelPath = path.resolve(
+  __dirname,
+  '../../../IPL MOCK UPDATED AUCTION.xlsx'
+);
 console.log('Loading Excel from:', excelPath);
 
 function parsePrice(val) {
@@ -35,7 +38,7 @@ try {
     { nameKey: '__EMPTY_9', priceKey: '__EMPTY_10', colName: 'J-K' },
     { nameKey: '__EMPTY_12', priceKey: '__EMPTY_13', colName: 'M-N' },
     { nameKey: '__EMPTY_15', priceKey: '__EMPTY_16', colName: 'P-Q' },
-    { nameKey: '__EMPTY_18', priceKey: '__EMPTY_19', colName: 'S-T' }
+    { nameKey: '__EMPTY_18', priceKey: '__EMPTY_19', colName: 'S-T' },
   ];
 
   const players = [];
@@ -55,18 +58,21 @@ try {
       const priceStr = priceVal ? priceVal.toString().trim() : '';
 
       // Check if this row is a header
-      const isHeader = priceStr.toLowerCase().includes('base price') || 
-                       nameStr.toLowerCase().includes('batters') ||
-                       nameStr.toLowerCase().includes('pacers') ||
-                       nameStr.toLowerCase().includes('spinners') ||
-                       nameStr.toLowerCase().includes('allrounders') ||
-                       nameStr.toLowerCase().includes('all rounders') ||
-                       nameStr.toLowerCase().includes('wicket') ||
-                       nameStr.toLowerCase().includes('retired');
+      const isHeader =
+        priceStr.toLowerCase().includes('base price') ||
+        nameStr.toLowerCase().includes('batters') ||
+        nameStr.toLowerCase().includes('pacers') ||
+        nameStr.toLowerCase().includes('spinners') ||
+        nameStr.toLowerCase().includes('allrounders') ||
+        nameStr.toLowerCase().includes('all rounders') ||
+        nameStr.toLowerCase().includes('wicket') ||
+        nameStr.toLowerCase().includes('retired');
 
       if (isHeader) {
         if (currentCategory) {
-          console.log(`Finished category: "${currentCategory}" | Players: ${categoryPlayerCount}`);
+          console.log(
+            `Finished category: "${currentCategory}" | Players: ${categoryPlayerCount}`
+          );
         }
         currentCategory = nameStr;
         categoryPlayerCount = 0;
@@ -83,18 +89,34 @@ try {
 
       // Determine attributes from currentCategory
       const catLower = currentCategory.toLowerCase();
-      const isMarquee = catLower.includes('premium') || catLower.includes('marquee');
-      const nationality = catLower.includes('overseas') || catLower.includes('retired') ? 'overseas' : 'indian';
+      const isMarquee =
+        catLower.includes('premium') || catLower.includes('marquee');
+      const nationality =
+        catLower.includes('overseas') || catLower.includes('retired')
+          ? 'overseas'
+          : 'indian';
       const isCapped = !catLower.includes('uncapped');
-      
+
       let role = 'batter';
       if (catLower.includes('batters') || catLower.includes('batting')) {
         role = 'batter';
-      } else if (catLower.includes('pacers') || catLower.includes('bowlers') || catLower.includes('bowler') || catLower.includes('pacer')) {
+      } else if (
+        catLower.includes('pacers') ||
+        catLower.includes('bowlers') ||
+        catLower.includes('bowler') ||
+        catLower.includes('pacer')
+      ) {
         role = 'pacer';
-      } else if (catLower.includes('spinners') || catLower.includes('spinner')) {
+      } else if (
+        catLower.includes('spinners') ||
+        catLower.includes('spinner')
+      ) {
         role = 'spinner';
-      } else if (catLower.includes('allrounders') || catLower.includes('all rounders') || catLower.includes('allrounder')) {
+      } else if (
+        catLower.includes('allrounders') ||
+        catLower.includes('all rounders') ||
+        catLower.includes('allrounder')
+      ) {
         role = 'allrounder';
       } else if (catLower.includes('wicket') || catLower.includes('wk')) {
         role = 'wk';
@@ -107,18 +129,22 @@ try {
         nationality,
         isMarquee,
         isCapped,
-        basePriceLakhs
+        basePriceLakhs,
       });
     }
 
     if (currentCategory) {
-      console.log(`Finished category: "${currentCategory}" | Players: ${categoryPlayerCount}`);
+      console.log(
+        `Finished category: "${currentCategory}" | Players: ${categoryPlayerCount}`
+      );
     }
   });
 
   console.log(`\nParsed ${players.length} players total.`);
-  console.log('Sample parsed players (first 5):', JSON.stringify(players.slice(0, 5), null, 2));
-
+  console.log(
+    'Sample parsed players (first 5):',
+    JSON.stringify(players.slice(0, 5), null, 2)
+  );
 } catch (error) {
   console.error('Error executing trial parse:', error);
 }

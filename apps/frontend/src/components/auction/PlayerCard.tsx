@@ -52,12 +52,14 @@ export function getRoleBadgeStyle(role: Player['role']): {
     case 'allrounder':
       return {
         label: 'All-Rounder',
-        className: 'from-purple-500 to-pink-600 text-white shadow-purple-500/20',
+        className:
+          'from-purple-500 to-pink-600 text-white shadow-purple-500/20',
       };
     case 'wk':
       return {
         label: 'Wicketkeeper',
-        className: 'from-amber-400 to-yellow-600 text-slate-900 shadow-yellow-500/20',
+        className:
+          'from-amber-400 to-yellow-600 text-slate-900 shadow-yellow-500/20',
       };
   }
 }
@@ -91,7 +93,8 @@ export function PlayerCard({ player }: PlayerCardProps) {
         </span>
 
         <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/5 border border-white/10 text-slate-300 flex items-center gap-1">
-          {flagEmoji} {player.nationality === 'overseas' ? 'Overseas' : 'Indian'}
+          {flagEmoji}{' '}
+          {player.nationality === 'overseas' ? 'Overseas' : 'Indian'}
         </span>
       </div>
 

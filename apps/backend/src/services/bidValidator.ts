@@ -27,7 +27,11 @@
  *   These checks require Redis access — they belong on the server only.
  */
 import { canBid, getBidRejectionMessage } from '@ipl-auction/shared';
-import type { FranchiseState, Player, BidValidationResult } from '@ipl-auction/shared';
+import type {
+  FranchiseState,
+  Player,
+  BidValidationResult,
+} from '@ipl-auction/shared';
 import { redis } from '../redis/client';
 import { REDIS_KEYS } from '../redis/keys';
 
@@ -53,7 +57,6 @@ export async function validateBid(
   franchiseState: FranchiseState,
   currentPlayer: Player
 ): Promise<ServerBidValidationResult> {
-
   // ── Check 1: Auction must be in 'bidding' or 'player_up' state ──────────────
   const auctionState = await redis.get(REDIS_KEYS.auctionState(roomId));
   if (auctionState !== 'player_up' && auctionState !== 'bidding') {

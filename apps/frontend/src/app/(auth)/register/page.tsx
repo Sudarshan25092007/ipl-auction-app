@@ -64,13 +64,18 @@ export default function RegisterPage() {
 
   return (
     <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 shadow-2xl">
-      <h2 className="text-xl font-semibold text-white mb-1">Create your account</h2>
+      <h2 className="text-xl font-semibold text-white mb-1">
+        Create your account
+      </h2>
       <p className="text-slate-400 text-sm mb-6">Join the auction in seconds</p>
 
       <form onSubmit={handleSubmit} className="space-y-4" id="register-form">
         {/* Email */}
         <div>
-          <label htmlFor="reg-email" className="block text-sm font-medium text-slate-300 mb-1.5">
+          <label
+            htmlFor="reg-email"
+            className="block text-sm font-medium text-slate-300 mb-1.5"
+          >
             Email address
           </label>
           <input
@@ -79,7 +84,10 @@ export default function RegisterPage() {
             required
             autoComplete="email"
             value={email}
-            onChange={(e) => { setEmail(e.target.value); setError(null); }}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setError(null);
+            }}
             placeholder="you@example.com"
             className="w-full px-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 transition"
           />
@@ -87,7 +95,10 @@ export default function RegisterPage() {
 
         {/* Username */}
         <div>
-          <label htmlFor="reg-username" className="block text-sm font-medium text-slate-300 mb-1.5">
+          <label
+            htmlFor="reg-username"
+            className="block text-sm font-medium text-slate-300 mb-1.5"
+          >
             Username
           </label>
           <input
@@ -97,34 +108,48 @@ export default function RegisterPage() {
             minLength={3}
             autoComplete="username"
             value={username}
-            onChange={(e) => { setUsername(e.target.value); setError(null); }}
+            onChange={(e) => {
+              setUsername(e.target.value);
+              setError(null);
+            }}
             placeholder="e.g. darshan_mk"
             className="w-full px-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 transition"
           />
-          <p className="text-xs text-slate-500 mt-1">Visible to other players in the auction room</p>
+          <p className="text-xs text-slate-500 mt-1">
+            Visible to other players in the auction room
+          </p>
         </div>
 
         {/* Password */}
         <div>
-          <label htmlFor="reg-password" className="block text-sm font-medium text-slate-300 mb-1.5">
+          <label
+            htmlFor="reg-password"
+            className="block text-sm font-medium text-slate-300 mb-1.5"
+          >
             Password
           </label>
           <input
             id="reg-password"
             type="password"
             required
-            minLength={8}
+            minLength={6}
             autoComplete="new-password"
             value={password}
-            onChange={(e) => { setPassword(e.target.value); setError(null); }}
-            placeholder="At least 8 characters"
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setError(null);
+            }}
+            placeholder="At least 6 characters"
             className="w-full px-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 transition"
           />
         </div>
 
         {/* Confirm Password */}
         <div>
-          <label htmlFor="reg-confirm-password" className="block text-sm font-medium text-slate-300 mb-1.5">
+          <label
+            htmlFor="reg-confirm-password"
+            className="block text-sm font-medium text-slate-300 mb-1.5"
+          >
             Confirm password
           </label>
           <input
@@ -133,7 +158,10 @@ export default function RegisterPage() {
             required
             autoComplete="new-password"
             value={confirmPassword}
-            onChange={(e) => { setConfirmPassword(e.target.value); setError(null); }}
+            onChange={(e) => {
+              setConfirmPassword(e.target.value);
+              setError(null);
+            }}
             placeholder="••••••••"
             className="w-full px-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 transition"
           />
@@ -163,7 +191,10 @@ export default function RegisterPage() {
 
       <p className="text-center text-slate-400 text-sm mt-6">
         Already have an account?{' '}
-        <Link href="/login" className="text-orange-400 hover:text-orange-300 font-medium transition">
+        <Link
+          href="/login"
+          className="text-orange-400 hover:text-orange-300 font-medium transition"
+        >
           Sign in
         </Link>
       </p>

@@ -44,7 +44,7 @@ export const WK_MIN = 1 as const;
 // The bid AMOUNT determines the tier, not the player's base price.
 
 /** Bids at or above this amount (lakhs) count toward the Tier-25+ cap */
-export const TIER_25_PLUS_THRESHOLD_LAKHS = 2_500 as const;  // ₹25 Cr
+export const TIER_25_PLUS_THRESHOLD_LAKHS = 2_500 as const; // ₹25 Cr
 
 /** Maximum players a franchise can acquire for ≥₹25 Cr */
 export const TIER_25_PLUS_MAX = 1 as const;

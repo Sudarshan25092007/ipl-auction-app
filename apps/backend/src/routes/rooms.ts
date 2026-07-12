@@ -29,6 +29,7 @@ import {
   addMemberToRoom,
   getMembersForRoom,
   isRoomMember,
+  type SquadPlayerRecord,
 } from '../db/queries/rooms';
 import type { LobbyParticipant, Player } from '@ipl-auction/shared';
 
@@ -44,7 +45,9 @@ roomsRouter.post('/', async (req, res) => {
 
     const room = await createRoom(hostUserId);
 
-    console.info(`[Rooms] Room created: ${room.invite_code} by user ${hostUserId}`);
+    console.info(
+      `[Rooms] Room created: ${room.invite_code} by user ${hostUserId}`
+    );
 
     res.status(201).json({
       roomId: room.id,
@@ -65,14 +68,18 @@ roomsRouter.post('/join', async (req, res) => {
     const { inviteCode } = req.body as { inviteCode: unknown };
 
     if (typeof inviteCode !== 'string' || inviteCode.trim().length !== 6) {
-      res.status(400).json({ error: 'Invite code must be exactly 6 characters.' });
+      res
+        .status(400)
+        .json({ error: 'Invite code must be exactly 6 characters.' });
       return;
     }
 
     const room = await getRoomByCode(inviteCode);
 
     if (!room) {
-      res.status(404).json({ error: 'Room not found. Check the invite code and try again.' });
+      res.status(404).json({
+        error: 'Room not found. Check the invite code and try again.',
+      });
       return;
     }
 
@@ -179,7 +186,7 @@ roomsRouter.get('/:code/squads', async (req, res) => {
       player: Player;
     }
     const squads = {} as Record<string, SquadPlayerItem[]>;
-    records.forEach((rec) => {
+    records.forEach((rec: SquadPlayerRecord) => {
       if (!squads[rec.franchise]) {
         squads[rec.franchise] = [];
       }
@@ -204,4 +211,3 @@ roomsRouter.get('/:code/squads', async (req, res) => {
     res.status(500).json({ error: 'Failed to load squads.' });
   }
 });
-
