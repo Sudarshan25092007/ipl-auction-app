@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import {
   createUser,
   findUserByEmail,
-  isEmailTaken,
+  isEmailTaken, 
 } from '../apps/backend/src/db/queries/users';
 
 describe('Auth DB Logic Tests', () => {
