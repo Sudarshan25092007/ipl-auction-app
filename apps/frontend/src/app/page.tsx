@@ -107,8 +107,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t border-white/5 py-6 text-center text-xs text-slate-600 tracking-wider uppercase shrink-0">
-        🏏 IPL Mock Auction Arena © {new Date().getFullYear()} — Made with
-        Antigravity
+        🏏 IPL Mock Auction Arena © {new Date().getFullYear()} Made by Sudarshan Patil H J
       </footer>
     </div>
   );
