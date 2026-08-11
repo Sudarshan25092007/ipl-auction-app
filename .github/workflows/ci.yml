@@ -1,0 +1,38 @@
+name: IPL Auction CI Pipeline
+
+# 1. When should this run?
+on:
+  pull_request:
+    branches: [ "main" ]
+
+# 2. What computer should GitHub use?
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    # 3. Spin up a temporary Redis server for our tests!
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+
+    steps:
+      # 4. Download your code
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 5. Install Node.js and PNPM
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - run: npm install -g pnpm
+      - run: pnpm install
+
+      # 6. Run the Checks!
+      - name: Check TypeScript Types
+        run: pnpm run typecheck
+      
+      - name: Run Backend Tests (Redis Locks)
+        run: pnpm run test:backend
