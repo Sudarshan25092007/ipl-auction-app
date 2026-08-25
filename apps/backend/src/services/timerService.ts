@@ -215,6 +215,13 @@ export class TimerService {
     await this.startTimer(roomId, newDuration, onExpiry);
     return newDuration;
   }
+
+  /**
+   * Check if a timer is currently active for a room in memory.
+   */
+  isTimerActive(roomId: string): boolean {
+    return this.timers.has(roomId);
+  }
 }
 
 /** Singleton timer service — ONE instance shared across all handlers */
@@ -225,4 +232,15 @@ export function getTimerService(io: Server): TimerService {
     timerServiceInstance = new TimerService(io);
   }
   return timerServiceInstance;
+}
+
+/** Reset the singleton instance (used in tests for clean state isolation) */
+export function resetTimerServiceInstance(): void {
+  if (timerServiceInstance) {
+    // Clear all active timers
+    for (const roomId of (timerServiceInstance as any).timers.keys()) {
+      timerServiceInstance.clearTimer(roomId);
+    }
+  }
+  timerServiceInstance = null;
 }
