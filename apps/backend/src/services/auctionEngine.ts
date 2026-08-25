@@ -44,6 +44,7 @@ import { redis } from '../redis/client';
 import { REDIS_KEYS } from '../redis/keys';
 import { getTimerService } from './timerService';
 import {
+  initializeQueue,
   getNextPlayer,
   advanceQueue,
   detectPhaseTransition,
@@ -72,15 +73,19 @@ export class AuctionEngine {
 
   /**
    * Entry point. Called by roomHandler when host fires room:start_auction.
-   * Initializes franchise states in Redis, then advances to the first player.
+   * Initializes player queue in DB/Redis, initializes franchise states in Redis,
+   * then advances to the first player.
    */
   async startAuction(): Promise<void> {
     console.info(`[AuctionEngine] Starting auction for room ${this.roomId}`);
 
-    // Initialize all franchise wallet states in Redis
+    // Step 1: Initialize player queue (Fisher-Yates shuffle & DB/Redis load)
+    await initializeQueue(this.roomId);
+
+    // Step 2: Initialize all franchise wallet states in Redis
     await initAllFranchiseStates(this.roomId);
 
-    // Set initial auction state
+    // Step 3: Set initial auction state
     await redis.set(REDIS_KEYS.auctionState(this.roomId), 'idle');
     await redis.set(REDIS_KEYS.currentBid(this.roomId), '0');
     await redis.del(REDIS_KEYS.currentBidder(this.roomId));
@@ -92,7 +97,7 @@ export class AuctionEngine {
       payload: { startedAt: new Date().toISOString() },
     });
 
-    // Advance to the first player
+    // Step 4: Advance to the first player
     await this.advanceToNextPlayer();
   }
 

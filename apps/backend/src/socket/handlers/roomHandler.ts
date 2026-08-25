@@ -113,12 +113,15 @@ export function registerRoomHandlers(
         return;
       }
 
-      // 3. Join the Socket.IO channel named after the room code
-      //    All future io.to(roomCode).emit() calls reach this socket
+      // 3. Join BOTH Socket.IO channels:
+      //    a. roomCode (e.g. "ABC123" - human invite code for lobby broadcasts)
+      //    b. room.id (UUID - internal database ID used by AuctionEngine & TimerService)
       await socket.join(roomCode);
+      await socket.join(room.id);
 
-      // 4. Store roomCode on socket.data for use in disconnect handler
+      // 4. Store roomCode and roomId on socket.data for use in all handlers
       socket.data.roomCode = roomCode;
+      socket.data.roomId = room.id;
 
       // 5. Mark user as online in Redis presence hash.
       //    CRITICAL: Wrapped in try/catch — presence is a UI nice-to-have (online dot).
@@ -264,8 +267,9 @@ export function registerRoomHandlers(
         await updateRoomStatus(room.id, 'active');
 
         // Notify all participants that the auction is starting (3s countdown)
-        io.to(roomCode).emit('room:auction_starting', {
+        io.to(roomCode).to(room.id).emit('room:auction_starting', {
           roomCode,
+          countdownSeconds: 3,
           message: 'The auction is starting in 3 seconds!',
         });
 
@@ -279,7 +283,7 @@ export function registerRoomHandlers(
             `[RoomHandler] AuctionEngine.startAuction failed for room ${roomCode}:`,
             err
           );
-          io.to(roomCode).emit('room:error', {
+          io.to(roomCode).to(room.id).emit('room:error', {
             message: 'Failed to start auction engine. Please try again.',
           });
         });

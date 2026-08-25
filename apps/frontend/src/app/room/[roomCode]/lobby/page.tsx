@@ -59,6 +59,7 @@ export default function LobbyPage({
   const [copied, setCopied] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [isPageLoading, setIsPageLoading] = useState(true);
+  const [countdown, setCountdown] = useState<number | null>(null);
 
   // Unwrap params Promise
   useEffect(() => {
@@ -99,13 +100,27 @@ export default function LobbyPage({
     }) => {
       setParticipants(payload.participants);
     };
-    const onAuctionStarting = () => {
-      // Auction has started — go to the live auction board, NOT back to franchise selection.
-      // Franchise selection happens BEFORE the host starts; this event fires AFTER.
-      router.push(`/room/${roomCode}/auction`);
+    const onAuctionStarting = (payload?: { countdownSeconds?: number }) => {
+      // Auction has started — show 3-second countdown modal then route to live auction
+      let currentSeconds = payload?.countdownSeconds ?? 3;
+      setCountdown(currentSeconds);
+      setIsStarting(true);
+
+      const interval = setInterval(() => {
+        currentSeconds -= 1;
+        if (currentSeconds <= 0) {
+          clearInterval(interval);
+          setCountdown(null);
+          router.push(`/room/${roomCode}/auction`);
+        } else {
+          setCountdown(currentSeconds);
+        }
+      }, 1000);
     };
     const onRoomError = (payload: { message: string }) => {
       setError(payload.message);
+      setIsStarting(false);
+      setCountdown(null);
     };
 
     socket.on(SOCKET_EVENTS.USER_JOINED, onUserJoined);
@@ -305,6 +320,32 @@ export default function LobbyPage({
           ) : null}
         </div>
       </div>
+
+      {/* 3-Second Launch Transition Modal */}
+      {countdown !== null && (
+        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center space-y-6 animate-[fadeIn_0.2s_ease-out]">
+          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-4xl shadow-2xl shadow-orange-500/30 animate-bounce">
+            🏏
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xs font-black text-amber-400 uppercase tracking-widest">
+              Draft Arena Initializing
+            </h2>
+            <h1 className="text-4xl md:text-5xl font-black text-white">
+              Starting in <span className="text-orange-400 font-mono">{countdown}</span>...
+            </h1>
+            <p className="text-slate-400 text-xs max-w-xs">
+              Entering the live auction arena. Get your bidding paddles ready!
+            </p>
+          </div>
+          <div className="w-48 h-1.5 bg-white/10 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all duration-1000 ease-linear"
+              style={{ width: `${((4 - countdown) / 3) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

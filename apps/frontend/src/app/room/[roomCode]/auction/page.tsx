@@ -69,11 +69,21 @@ export default function AuctionPage({
     queuePosition,
     queueTotal,
     myFranchiseState,
+    setIsHost: setStoreIsHost,
+    setMyFranchise: setStoreMyFranchise,
     setSquadPlayers,
   } = useAuctionStore();
 
-  const isHost = user && hostUserId && user.sub === hostUserId;
+  const isHost = Boolean(user && hostUserId && user.sub === hostUserId);
   const myFranchise = myFranchiseState?.franchise ?? null;
+
+  // Sync isHost and myFranchise to store
+  useEffect(() => {
+    setStoreIsHost(isHost);
+    if (myFranchise) {
+      setStoreMyFranchise(myFranchise);
+    }
+  }, [isHost, myFranchise, setStoreIsHost, setStoreMyFranchise]);
 
   // 1. Initial Load: Fetch room data to check host, and load all squad players won so far
   useEffect(() => {
@@ -180,6 +190,11 @@ export default function AuctionPage({
               {roomCode}
             </span>
           </span>
+          {isHost && (
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/10 border border-amber-500/30 text-amber-400">
+              👑 Room Host
+            </span>
+          )}
         </div>
 
         {/* Phase Badge & Progress */}
@@ -209,55 +224,59 @@ export default function AuctionPage({
 
       {/* Main Panel Grid */}
       <main className="flex-1 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-hidden">
-        {/* LEFT COLUMN: INSPECT OTHERS (4/12 grid) */}
+        {/* LEFT COLUMN: MY FRANCHISE ROSTER & PURSE (3/12 grid) */}
         <section className="lg:col-span-3 flex flex-col h-full overflow-hidden">
-          <div className="flex-1 flex flex-col bg-slate-900/40 border border-white/5 rounded-3xl overflow-hidden p-4 space-y-4">
-            <div>
-              <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                Franchise Inspector
-              </h2>
-              <p className="text-[10px] text-slate-600 font-semibold uppercase mt-0.5 tracking-wider">
-                Click a franchise to inspect their roster
+          {myFranchise ? (
+            <div className="h-full flex flex-col bg-slate-900/40 border border-cyan-500/20 rounded-3xl overflow-hidden p-4">
+              <div className="mb-3 flex justify-between items-center shrink-0">
+                <h2 className="text-xs font-bold text-cyan-400 uppercase tracking-widest">
+                  My Franchise Roster
+                </h2>
+                <span className="text-[10px] font-black text-slate-300 bg-white/10 border border-white/10 px-2 py-0.5 rounded-md">
+                  {myFranchise}
+                </span>
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <SquadPanel franchise={myFranchise} showWallet={true} />
+              </div>
+            </div>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center border border-dashed border-white/10 bg-slate-900/20 rounded-3xl p-6 text-center text-slate-500">
+              <span className="text-3xl mb-2">👀</span>
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                Spectator View
+              </p>
+              <p className="text-[11px] text-slate-600 mt-1">
+                No franchise claimed in lobby.
               </p>
             </div>
-
-            {/* Selector Grid */}
-            <div className="grid grid-cols-2 gap-1.5 shrink-0">
-              {franchises.map((name) => (
-                <button
-                  key={name}
-                  onClick={() => setActiveTab(name)}
-                  className={`py-2 px-2.5 rounded-xl text-left text-xs font-bold truncate transition-all duration-200 cursor-pointer ${
-                    activeTab === name
-                      ? 'bg-white/10 text-white border border-white/15 shadow-sm'
-                      : 'bg-white/5 text-slate-500 hover:text-slate-300 border border-transparent'
-                  }`}
-                >
-                  {name.split(' ').pop()}
-                </button>
-              ))}
-            </div>
-
-            {/* Inspection Panel Display */}
-            <div className="flex-1 overflow-hidden">
-              <SquadPanel franchise={activeTab} showWallet={true} />
-            </div>
-          </div>
+          )}
         </section>
 
-        {/* CENTER COLUMN: LIVE BOARD (5/12 grid) */}
-        <section className="lg:col-span-6 flex flex-col justify-center space-y-6 h-full">
+        {/* CENTER COLUMN: LIVE BOARD (6/12 grid) */}
+        <section className="lg:col-span-6 flex flex-col justify-center space-y-4 h-full">
           {auctionState === 'idle' ? (
-            <div className="flex-1 flex flex-col items-center justify-center border border-white/5 bg-slate-900/30 rounded-3xl p-8 text-center space-y-4">
-              <span className="text-6xl animate-bounce">⏳</span>
-              <h2 className="text-2xl font-black text-white">
-                Draft is Pending
-              </h2>
-              <p className="text-slate-400 text-sm max-w-sm">
-                Wait for the host to press "Start Auction" in the lobby. The
-                auction will initiate as soon as all managers selection
-                resolves.
-              </p>
+            <div className="flex-1 flex flex-col items-center justify-center border border-white/5 bg-slate-900/30 rounded-3xl p-8 text-center space-y-6">
+              <div className="relative">
+                <span className="text-6xl">🏟️</span>
+                <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-4 w-4 bg-cyan-500"></span>
+                </span>
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-2xl font-black text-white">
+                  Preparing Draft Arena
+                </h2>
+                <p className="text-slate-400 text-xs max-w-md">
+                  Shuffling player pool and syncing franchise wallets. The first player will be on the block in moments...
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs font-bold text-cyan-400 bg-cyan-500/10 px-4 py-2 rounded-xl border border-cyan-500/20">
+                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                <span>Synchronizing live draft board...</span>
+              </div>
             </div>
           ) : auctionState === 'complete' ? (
             <div className="flex-1 flex flex-col items-center justify-center border border-white/5 bg-slate-900/30 rounded-3xl p-8 text-center space-y-4">
@@ -266,8 +285,7 @@ export default function AuctionPage({
                 Auction Completed!
               </h2>
               <p className="text-slate-400 text-sm max-w-sm">
-                The live draft queue has been fully resolved. Click the button
-                below to see the final squads and spends.
+                The live draft queue has been fully resolved. Click below to see the final squads and spends.
               </p>
               <button
                 onClick={() => router.push(`/room/${roomCode}/results`)}
@@ -301,15 +319,15 @@ export default function AuctionPage({
 
           {/* HOST CONTROL PANEL */}
           {isHost && auctionState !== 'complete' && (
-            <div className="bg-slate-900/80 border border-amber-500/20 rounded-2xl p-4 flex flex-col space-y-2 shrink-0">
-              <div className="flex items-center gap-2 text-amber-400 text-xs font-bold uppercase tracking-wider">
+            <div className="bg-slate-900/80 border border-amber-500/20 rounded-2xl p-3 flex flex-col space-y-2 shrink-0">
+              <div className="flex items-center gap-2 text-amber-400 text-[11px] font-bold uppercase tracking-wider">
                 <span>🛡️ Host Administration Dashboard</span>
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 {auctionState === 'paused' ? (
                   <button
                     onClick={() => handleHostControl('resume')}
-                    className="py-2.5 rounded-xl text-slate-950 font-bold text-xs bg-green-400 hover:bg-green-500 cursor-pointer active:scale-95 transition-all text-center"
+                    className="py-2 rounded-xl text-slate-950 font-bold text-xs bg-green-400 hover:bg-green-500 cursor-pointer active:scale-95 transition-all text-center"
                   >
                     ▶ Resume Timer
                   </button>
@@ -317,7 +335,7 @@ export default function AuctionPage({
                   <button
                     onClick={() => handleHostControl('pause')}
                     disabled={auctionState === 'idle'}
-                    className="py-2.5 rounded-xl font-bold text-xs bg-amber-500/20 border border-amber-500/30 text-amber-300 hover:bg-amber-500/35 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transition-all text-center"
+                    className="py-2 rounded-xl font-bold text-xs bg-amber-500/20 border border-amber-500/30 text-amber-300 hover:bg-amber-500/35 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all text-center"
                   >
                     ⏸ Pause Timer
                   </button>
@@ -326,7 +344,7 @@ export default function AuctionPage({
                 <button
                   onClick={() => handleHostControl('skip')}
                   disabled={auctionState === 'idle'}
-                  className="py-2.5 rounded-xl font-bold text-xs bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/35 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transition-all text-center"
+                  className="py-2 rounded-xl font-bold text-xs bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/35 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all text-center"
                 >
                   ⏭ Skip Player
                 </button>
@@ -336,29 +354,51 @@ export default function AuctionPage({
                   disabled={
                     auctionState === 'idle' || auctionState === 'paused'
                   }
-                  className="py-2.5 rounded-xl font-bold text-xs bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/35 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transition-all text-center"
+                  className="py-2 rounded-xl font-bold text-xs bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/35 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all text-center"
                 >
-                  ⏳ Extend +30s
+                  ⏳ Extend +15s
                 </button>
               </div>
             </div>
           )}
         </section>
 
-        {/* RIGHT COLUMN: PERSONAL ROSTER (3/12 grid) */}
+        {/* RIGHT COLUMN: INSPECTOR FOR OPPONENT FRANCHISES (3/12 grid) */}
         <section className="lg:col-span-3 flex flex-col h-full overflow-hidden">
-          {myFranchise ? (
-            <SquadPanel franchise={myFranchise} showWallet={true} />
-          ) : (
-            <div className="flex-grow flex flex-col items-center justify-center border border-white/5 bg-slate-900/30 rounded-3xl p-6 text-center text-slate-500">
-              <span className="text-3xl mb-1">👀</span>
-              <p className="text-sm font-semibold">Spectator Mode</p>
-              <p className="text-xs text-slate-600 mt-1 max-w-[160px]">
-                You did not select a franchise. You are currently viewing the
-                live draft board.
+          <div className="flex-1 flex flex-col bg-slate-900/40 border border-white/5 rounded-3xl overflow-hidden p-4 space-y-3">
+            <div>
+              <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                League Roster Inspector
+              </h2>
+              <p className="text-[10px] text-slate-600 font-semibold uppercase mt-0.5 tracking-wider">
+                Click a franchise to inspect their roster
               </p>
             </div>
-          )}
+
+            {/* Selector Grid (Filter out local user's own franchise) */}
+            <div className="grid grid-cols-2 gap-1.5 shrink-0">
+              {franchises
+                .filter((name) => name !== myFranchise)
+                .map((name) => (
+                  <button
+                    key={name}
+                    onClick={() => setActiveTab(name)}
+                    className={`py-1.5 px-2.5 rounded-xl text-left text-[11px] font-bold truncate transition-all duration-200 cursor-pointer ${
+                      activeTab === name
+                        ? 'bg-white/10 text-white border border-white/15 shadow-sm'
+                        : 'bg-white/5 text-slate-500 hover:text-slate-300 border border-transparent'
+                    }`}
+                  >
+                    {name.split(' ').pop()}
+                  </button>
+                ))}
+            </div>
+
+            {/* Inspection Panel Display */}
+            <div className="flex-1 overflow-hidden">
+              <SquadPanel franchise={activeTab} showWallet={true} />
+            </div>
+          </div>
         </section>
       </main>
 

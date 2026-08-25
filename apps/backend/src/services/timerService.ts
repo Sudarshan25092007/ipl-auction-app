@@ -155,6 +155,66 @@ export class TimerService {
     const remaining = (parseInt(deadline, 10) - Date.now()) / 1_000;
     return Math.max(0, Math.ceil(remaining));
   }
+
+  /**
+   * Pause the timer for a room.
+   * Clears active interval, saves remaining time, emits paused events.
+   */
+  async pauseTimer(roomId: string): Promise<number> {
+    const remainingSeconds = await this.getRemainingSeconds(roomId);
+    this.clearTimer(roomId);
+    if (remainingSeconds > 0) {
+      await redis.set(
+        `${REDIS_KEYS.timerDeadline(roomId)}:paused`,
+        remainingSeconds.toString()
+      );
+      await redis.set(REDIS_KEYS.auctionState(roomId), 'paused');
+      this.io.to(roomId).emit(SOCKET_EVENTS.TIMER_TICK, {
+        roomId,
+        secondsLeft: remainingSeconds,
+      });
+      this.io.to(roomId).emit('auction:paused', { secondsLeft: remainingSeconds });
+    }
+    return remainingSeconds;
+  }
+
+  /**
+   * Resume a paused timer for a room.
+   */
+  async resumeTimer(
+    roomId: string,
+    onExpiry: () => Promise<void>
+  ): Promise<void> {
+    const pausedStr = await redis.get(
+      `${REDIS_KEYS.timerDeadline(roomId)}:paused`
+    );
+    const remainingSeconds = pausedStr ? parseInt(pausedStr, 10) : 0;
+    if (remainingSeconds > 0) {
+      await redis.del(`${REDIS_KEYS.timerDeadline(roomId)}:paused`);
+      await redis.set(REDIS_KEYS.auctionState(roomId), 'bidding');
+      this.io.to(roomId).emit('auction:resumed', { secondsLeft: remainingSeconds });
+      await this.startTimer(roomId, remainingSeconds, onExpiry);
+    }
+  }
+
+  /**
+   * Extend an active timer by extraSeconds (e.g. +15 seconds).
+   */
+  async extendTimer(
+    roomId: string,
+    extraSeconds: number,
+    onExpiry: () => Promise<void>
+  ): Promise<number> {
+    const remainingSeconds = await this.getRemainingSeconds(roomId);
+    const newDuration = remainingSeconds + extraSeconds;
+    this.io.to(roomId).emit(SOCKET_EVENTS.TIMER_TICK, {
+      roomId,
+      secondsLeft: newDuration,
+    });
+    this.io.to(roomId).emit('auction:extended', { secondsLeft: newDuration });
+    await this.startTimer(roomId, newDuration, onExpiry);
+    return newDuration;
+  }
 }
 
 /** Singleton timer service — ONE instance shared across all handlers */

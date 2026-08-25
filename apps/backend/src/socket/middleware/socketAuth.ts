@@ -39,7 +39,8 @@ export interface SocketData {
     email: string;
     username: string;
   };
-  roomCode: string | null; // Set after room:join event
+  roomCode: string | null; // Set after room:join event (invite code)
+  roomId: string | null; // Set after room:join event (database UUID)
   franchise: string | null; // Set after room:franchise_select event
 }
 
@@ -86,6 +87,7 @@ export function socketAuthMiddleware(socket: Socket, next: NextFn): void {
         username: decoded.username,
       },
       roomCode: null,
+      roomId: null,
       franchise: null,
     };
 

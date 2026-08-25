@@ -50,7 +50,8 @@ export function useAuction(
   useEffect(() => {
     if (!socket || !roomCode || !isConnected) return;
 
-    // 1. Initial State Sync Request
+    // 1. Initial State Sync & Room Subscription
+    socket.emit(SOCKET_EVENTS.JOIN_ROOM, { roomCode });
     socket.emit('auction:state_sync_request', { roomCode });
 
     // 2. Register Socket Listeners

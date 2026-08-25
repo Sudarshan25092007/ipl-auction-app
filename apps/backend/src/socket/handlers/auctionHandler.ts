@@ -239,6 +239,24 @@ export function registerAuctionHandlers(
         if (!room) return;
         const roomId = room.id;
 
+        // Auto-join room channels on state sync request (recovers connection on tab refresh)
+        await socket.join(roomCode);
+        await socket.join(roomId);
+        socket.data.roomCode = roomCode;
+        socket.data.roomId = roomId;
+
+        // If franchise is missing from socket.data (page refresh), resolve it from DB membership
+        let franchise = socket.data.franchise as FranchiseName | undefined;
+        if (!franchise) {
+          const { getMembersForRoom } = await import('../../db/queries/rooms');
+          const members = await getMembersForRoom(roomId);
+          const me = members.find((m) => m.user_id === socket.data.user.id);
+          if (me?.franchise) {
+            franchise = me.franchise as FranchiseName;
+            socket.data.franchise = franchise;
+          }
+        }
+
         // Read entire auction state from Redis in parallel (~1ms total)
         const [playerJson, currentBidStr, currentBidder, auctionState] =
           await Promise.all([
@@ -256,7 +274,6 @@ export function registerAuctionHandlers(
           : null;
 
         // Load my franchise state
-        const franchise = socket.data.franchise as FranchiseName | undefined;
         const myFranchiseState = franchise
           ? await loadFranchiseState(roomId, franchise)
           : null;
@@ -304,12 +321,18 @@ export function registerAuctionHandlers(
       try {
         const { roomCode, action } = payload;
         const room = await getRoomByCode(roomCode);
-        if (!room) return;
+        if (!room) {
+          socket.emit('room:error', { message: 'Room not found.' });
+          return;
+        }
 
-        // Verify user is the host of the room
+        // ── Security Check: Verify requesting socket user is the room host ───────
         if (room.host_user_id !== socket.data.user.id) {
-          socket.emit('host:control_error', {
-            message: 'Only the host can control the auction.',
+          console.warn(
+            `[SecurityAlert] Non-host user ${socket.data.user.username} (${socket.data.user.id}) attempted host action '${action}' in room ${roomCode}`
+          );
+          socket.emit('room:error', {
+            message: 'Unauthorized: Only the room host can execute auction controls.',
           });
           return;
         }
@@ -318,86 +341,50 @@ export function registerAuctionHandlers(
         const engine = getAuctionEngine(roomId, io);
         const timerService = getTimerService(io);
 
-        if (action === 'pause') {
-          const remaining = await timerService.getRemainingSeconds(roomId);
-          if (remaining > 0) {
-            timerService.clearTimer(roomId);
-            await redis.set(
-              REDIS_KEYS.timerDeadline(roomId) + ':paused',
-              remaining.toString()
-            );
-            await redis.set(REDIS_KEYS.auctionState(roomId), 'paused');
-            io.to(roomCode).emit(SOCKET_EVENTS.TIMER_TICK, {
-              roomId,
-              secondsLeft: remaining,
-            });
-            io.to(roomCode).emit('auction:paused', { secondsLeft: remaining });
-            console.info(
-              `[HostControl] Auction paused by host for room ${roomCode}`
-            );
+        const expiryCallback = async () => {
+          const { getNextPlayer } = await import('../../services/queueManager');
+          const entry = await getNextPlayer(roomId);
+          if (entry) {
+            await engine.handleTimerExpiry(entry);
           }
-        } else if (action === 'resume') {
-          const pausedStr = await redis.get(
-            REDIS_KEYS.timerDeadline(roomId) + ':paused'
-          );
-          const remaining = pausedStr ? parseInt(pausedStr, 10) : 0;
-          if (remaining > 0) {
-            await redis.del(REDIS_KEYS.timerDeadline(roomId) + ':paused');
-            await redis.set(REDIS_KEYS.auctionState(roomId), 'bidding');
-            io.to(roomCode).emit('auction:resumed', { secondsLeft: remaining });
+        };
 
-            await timerService.startTimer(roomId, remaining, async () => {
-              const { getNextPlayer } =
-                await import('../../services/queueManager');
-              const entry = await getNextPlayer(roomId);
-              if (entry) {
-                await engine.handleTimerExpiry(entry);
-              }
-            });
-            console.info(
-              `[HostControl] Auction resumed by host for room ${roomCode}`
-            );
-          }
+        if (action === 'pause') {
+          const pausedSeconds = await timerService.pauseTimer(roomId);
+          console.info(
+            `[HostControl] Auction paused at ${pausedSeconds}s by host (${username}) for room ${roomCode}`
+          );
+        } else if (action === 'resume') {
+          await timerService.resumeTimer(roomId, expiryCallback);
+          console.info(
+            `[HostControl] Auction resumed by host (${username}) for room ${roomCode}`
+          );
         } else if (action === 'skip') {
-          // Stop timer
           timerService.clearTimer(roomId);
           await redis.del(REDIS_KEYS.timerDeadline(roomId));
-          await redis.del(REDIS_KEYS.timerDeadline(roomId) + ':paused');
+          await redis.del(`${REDIS_KEYS.timerDeadline(roomId)}:paused`);
 
           const { getNextPlayer } = await import('../../services/queueManager');
           const entry = await getNextPlayer(roomId);
           if (entry) {
-            await engine.processPlayerUnsold(entry);
+            await engine.handleTimerExpiry(entry);
             console.info(
-              `[HostControl] Player skipped by host for room ${roomCode}`
+              `[HostControl] Player skipped/resolved by host (${username}) for room ${roomCode}`
             );
           }
         } else if (action === 'extend') {
-          const remaining = await timerService.getRemainingSeconds(roomId);
-          const newDuration = remaining + 30;
-
-          io.to(roomCode).emit(SOCKET_EVENTS.TIMER_TICK, {
+          const newSeconds = await timerService.extendTimer(
             roomId,
-            secondsLeft: newDuration,
-          });
-          io.to(roomCode).emit('auction:extended', {
-            secondsLeft: newDuration,
-          });
-
-          await timerService.startTimer(roomId, newDuration, async () => {
-            const { getNextPlayer } =
-              await import('../../services/queueManager');
-            const entry = await getNextPlayer(roomId);
-            if (entry) {
-              await engine.handleTimerExpiry(entry);
-            }
-          });
+            15,
+            expiryCallback
+          );
           console.info(
-            `[HostControl] Timer extended (+30s) by host for room ${roomCode}`
+            `[HostControl] Timer extended to ${newSeconds}s (+15s) by host (${username}) for room ${roomCode}`
           );
         }
       } catch (err) {
-        console.error('[HostControl] Error in host:control:', err);
+        console.error(`[HostControl] Error executing action '${payload.action}':`, err);
+        socket.emit('room:error', { message: 'Failed to execute host action.' });
       }
     }
   );

@@ -66,6 +66,8 @@ interface AuctionState {
 
   // ─── Local User's Franchise State ───────────────────────────────────────────
   myFranchiseState: FranchiseState | null;
+  isHost: boolean;
+  myFranchise: FranchiseName | null;
 
   // ─── Live UI Feed State ─────────────────────────────────────────────────────
   bidHistory: BidHistoryEntry[];
@@ -73,6 +75,8 @@ interface AuctionState {
   squadPlayers: Record<FranchiseName, SquadPlayerState[]>;
 
   // ─── Actions ────────────────────────────────────────────────────────────────
+  setIsHost: (isHost: boolean) => void;
+  setMyFranchise: (franchise: FranchiseName | null) => void;
   setPlayerUp: (payload: {
     player: Player;
     queuePosition: number;
@@ -143,6 +147,8 @@ const initialState = {
   queuePosition: 0,
   queueTotal: 0,
   myFranchiseState: null,
+  isHost: false,
+  myFranchise: null as FranchiseName | null,
   bidHistory: [],
   squadSummaries: initialSquadSummaries(),
   squadPlayers: initialSquadPlayers(),
@@ -150,6 +156,9 @@ const initialState = {
 
 export const useAuctionStore = create<AuctionState>((set, get) => ({
   ...initialState,
+
+  setIsHost: (isHost) => set({ isHost }),
+  setMyFranchise: (myFranchise) => set({ myFranchise }),
 
   // ─── setPlayerUp ─────────────────────────────────────────────────────────────
   setPlayerUp: (payload) =>
@@ -282,8 +291,10 @@ export const useAuctionStore = create<AuctionState>((set, get) => ({
     set((state) => {
       // Rebuild the squad summary for the user's franchise if synced
       const updatedSummaries = { ...state.squadSummaries };
+      let myFranchise = state.myFranchise;
       if (payload.myFranchiseState) {
         const name = payload.myFranchiseState.franchise;
+        myFranchise = name;
         updatedSummaries[name] = {
           franchise: name,
           totalPlayersAcquired: payload.myFranchiseState.squadCount,
@@ -299,6 +310,7 @@ export const useAuctionStore = create<AuctionState>((set, get) => ({
         auctionPhase: payload.auctionPhase,
         auctionState: payload.auctionState,
         myFranchiseState: payload.myFranchiseState ?? null,
+        myFranchise,
         queuePosition: payload.queuePosition,
         queueTotal: payload.queueTotal,
         squadSummaries: updatedSummaries,
