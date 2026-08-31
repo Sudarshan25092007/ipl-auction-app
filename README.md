@@ -582,10 +582,10 @@ This is a personal learning project, but feedback and suggestions are welcome! O
 ## 📄 License
 
 MIT License — see [LICENSE](LICENSE) for details.
-
+(coming soon)
 ---
 
 <p align="center">
   <i>Built with ❤️ by <a href="https://www.linkedin.com/in/sudarshan-patil-hj259227/">Sudarshan Patil H J</a></i><br>
-  <i>Backend Infrastructure Engineer • <a href="https://github.com/InsForge/InsForge">InsForge Contributor</a> • Node.js • TypeScript • PostgreSQL • Redis</i>
+  <i>Backend Infrastructure Engineer • Node.js • TypeScript • PostgreSQL • Redis</i>
 </p>
