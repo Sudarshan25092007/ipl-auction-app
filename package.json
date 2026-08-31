@@ -7,7 +7,7 @@
     "build": "turbo run build",
     "clean": "turbo run clean && rm -rf node_modules",
     "test": "turbo run test",
-    "test:backend": "vitest run",
+    "test:backend": "vitest run --fileParallelism=false",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "lint": "next lint",

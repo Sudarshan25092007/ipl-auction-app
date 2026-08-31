@@ -75,7 +75,8 @@ export default function AuctionPage({
   } = useAuctionStore();
 
   const isHost = Boolean(user && hostUserId && user.sub === hostUserId);
-  const myFranchise = myFranchiseState?.franchise ?? null;
+  const storeFranchise = useAuctionStore((state) => state.myFranchise);
+  const myFranchise = myFranchiseState?.franchise ?? storeFranchise ?? null;
 
   // Sync isHost and myFranchise to store
   useEffect(() => {
@@ -85,17 +86,24 @@ export default function AuctionPage({
     }
   }, [isHost, myFranchise, setStoreIsHost, setStoreMyFranchise]);
 
-  // 1. Initial Load: Fetch room data to check host, and load all squad players won so far
+  // 1. Initial Load: Fetch room data to check host & participants, and load all squad players won so far
   useEffect(() => {
     if (!roomCode || !user) return;
 
     const loadInitialData = async () => {
       try {
-        // Fetch room info to identify host
+        // Fetch room info to identify host and participant franchise claims
         const roomRes = await fetchApi<{
           room: { hostUserId: string; status: string };
+          participants: Array<{ userId: string; franchise: FranchiseName | null }>;
         }>(`/rooms/${roomCode}`);
         setHostUserId(roomRes.room.hostUserId);
+
+        // Immediate fallback: hydrate user franchise from participants list
+        const me = roomRes.participants?.find((p) => p.userId === user.sub);
+        if (me?.franchise) {
+          setStoreMyFranchise(me.franchise);
+        }
 
         // Fetch squad won players list for state sync
         const squadRes = await fetchApi<{
@@ -111,7 +119,7 @@ export default function AuctionPage({
     };
 
     loadInitialData();
-  }, [roomCode, user, setSquadPlayers]);
+  }, [roomCode, user, setSquadPlayers, setStoreMyFranchise]);
 
   // 2. Handle Phase Transition Interstitial
   useEffect(() => {

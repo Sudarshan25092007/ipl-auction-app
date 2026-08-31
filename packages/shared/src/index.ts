@@ -89,4 +89,8 @@ export {
 } from './constants/auction';
 
 // ─── Validators ───────────────────────────────────────────────────────────────
-export { canBid, getBidRejectionMessage } from './validators/bidEligibility';
+export {
+  canBid,
+  getBidRejectionMessage,
+  getBidIncrement,
+} from './validators/bidEligibility';

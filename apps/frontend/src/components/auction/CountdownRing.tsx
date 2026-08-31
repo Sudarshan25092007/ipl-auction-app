@@ -3,13 +3,13 @@
 /**
  * apps/frontend/src/components/auction/CountdownRing.tsx
  *
- * MAJOR FUNCTION: Visualizes the remaining bidding time using an SVG circular progress bar.
- * Displays the absolute number of seconds in the center and colors the ring dynamically.
+ * MAJOR FUNCTION: Visualizes the remaining bidding time using an authoritative SVG circular progress bar.
+ * Displays the real-time seconds in the center and shifts the ring color dynamically.
  *
  * SYSTEM CONCEPT — Declarative UI from state:
- *   Instead of running a local setInterval that drifts, the ring relies purely on
- *   the `secondsLeft` slice from the Zustand store. Whenever the server ticks, this
- *   component updates. The CSS transition handles the smooth animation between ticks.
+ *   The ring relies purely on the `secondsLeft` slice from the Zustand store.
+ *   Whenever the server emits auction:timer_tick, this component updates reactively.
+ *   CSS transitions handle the smooth animation between second ticks.
  */
 
 import { useMemo } from 'react';
@@ -19,32 +19,49 @@ export function CountdownRing() {
   const secondsLeft = useAuctionStore((state) => state.secondsLeft);
   const auctionState = useAuctionStore((state) => state.auctionState);
 
-  // Dynamic max seconds: if it is above 10, it must be the initial player_up timer (30s).
-  // If a bid is placed, the timer resets to 10s, so the limit becomes 10s.
+  // Dynamic max seconds: 30s for initial player_up, 10s for bid resets
   const maxSeconds = useMemo(() => {
     return secondsLeft > 10 ? 30 : 10;
   }, [secondsLeft]);
 
-  // SVG parameters
-  const radius = 60;
-  const stroke = 8;
-  const normalizedRadius = radius - stroke * 2;
-  const circumference = normalizedRadius * 2 * Math.PI;
+  // Precise SVG geometry
+  const radius = 54;
+  const strokeWidth = 7;
+  const circumference = 2 * Math.PI * radius; // ~339.29px
 
   const strokeDashoffset = useMemo(() => {
-    const progress = Math.min(1, Math.max(0, secondsLeft / maxSeconds));
+    const clampedSeconds = Math.max(0, Math.min(secondsLeft, maxSeconds));
+    const progress = clampedSeconds / maxSeconds;
     return circumference - progress * circumference;
   }, [secondsLeft, maxSeconds, circumference]);
 
-  // Dynamic color coding
-  const timerColor = useMemo(() => {
+  // Dynamic color coding & urgency stage
+  const colorStage = useMemo(() => {
     if (secondsLeft > 15) {
-      return 'text-green-500 stroke-green-500 drop-shadow-[0_0_8px_rgba(34,197,94,0.3)]';
+      return {
+        textColor: 'text-emerald-400',
+        strokeClass: 'stroke-emerald-400',
+        glowStyle: { filter: 'drop-shadow(0px 0px 8px rgba(52, 211, 153, 0.45))' },
+        bgGlow: 'bg-emerald-500/5',
+        label: 'Active Bid Window',
+      };
     }
-    if (secondsLeft >= 8) {
-      return 'text-amber-500 stroke-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.3)]';
+    if (secondsLeft > 5) {
+      return {
+        textColor: 'text-amber-400',
+        strokeClass: 'stroke-amber-400',
+        glowStyle: { filter: 'drop-shadow(0px 0px 8px rgba(251, 191, 36, 0.45))' },
+        bgGlow: 'bg-amber-500/5',
+        label: 'Going Once...',
+      };
     }
-    return 'text-red-500 stroke-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse';
+    return {
+      textColor: 'text-rose-500 animate-pulse',
+      strokeClass: 'stroke-rose-500',
+      glowStyle: { filter: 'drop-shadow(0px 0px 12px rgba(244, 63, 94, 0.7))' },
+      bgGlow: 'bg-rose-500/10',
+      label: 'FINAL CALL',
+    };
   }, [secondsLeft]);
 
   // If the auction is complete or idle, don't show the timer ring
@@ -53,47 +70,68 @@ export function CountdownRing() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center p-4">
-      <div className="relative w-36 h-36 flex items-center justify-center">
+    <div className="flex flex-col items-center justify-center p-3 select-none">
+      <div
+        className={`relative w-36 h-36 rounded-full flex items-center justify-center transition-colors duration-500 ${colorStage.bgGlow}`}
+      >
         {/* SVG Progress Ring */}
         <svg
           className="w-full h-full transform -rotate-90"
-          viewBox="0 0 120 120"
+          viewBox="0 0 140 140"
         >
-          {/* Background Track */}
+          {/* Background Track Circle */}
           <circle
-            className="stroke-white/5"
+            className="stroke-white/10"
             fill="transparent"
-            strokeWidth={stroke}
-            r={normalizedRadius}
-            cx="60"
-            cy="60"
+            strokeWidth={strokeWidth}
+            r={radius}
+            cx="70"
+            cy="70"
           />
-          {/* Active Progress */}
+
+          {/* Active Progress Circle */}
           <circle
-            className={`transition-all duration-1000 ease-linear ${timerColor}`}
+            className={`transition-all duration-1000 ease-linear ${colorStage.strokeClass}`}
             fill="transparent"
-            strokeWidth={stroke}
-            strokeDasharray={circumference + ' ' + circumference}
-            style={{ strokeDashoffset }}
-            r={normalizedRadius}
-            cx="60"
-            cy="60"
+            strokeWidth={strokeWidth}
+            strokeDasharray={`${circumference} ${circumference}`}
+            style={{
+              strokeDashoffset,
+              ...colorStage.glowStyle,
+            }}
+            r={radius}
+            cx="70"
+            cy="70"
             strokeLinecap="round"
           />
         </svg>
 
-        {/* Center Text */}
+        {/* Center Numerical Display */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
           <span
-            className={`text-4xl font-black tracking-tight font-mono ${timerColor.split(' ')[0]}`}
+            className={`text-4xl font-black tracking-tight font-mono transition-colors duration-300 ${colorStage.textColor}`}
           >
             {secondsLeft}
           </span>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mt-0.5">
+          <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-400 mt-0.5">
             Seconds
           </span>
         </div>
+      </div>
+
+      {/* Urgency Badge */}
+      <div className="mt-2">
+        <span
+          className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border transition-all duration-300 ${
+            secondsLeft <= 5
+              ? 'bg-rose-500/20 text-rose-400 border-rose-500/40 animate-bounce'
+              : secondsLeft <= 15
+              ? 'bg-amber-500/10 text-amber-300 border-amber-500/20'
+              : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
+          }`}
+        >
+          {colorStage.label}
+        </span>
       </div>
     </div>
   );

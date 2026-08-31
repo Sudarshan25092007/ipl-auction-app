@@ -66,6 +66,20 @@ function getBidTier(
 }
 
 /**
+ * Standard IPL bidding increments scale (in Lakhs).
+ * - Under ₹50 Lakhs (< 50L): increment is +₹2 Lakhs (2L)
+ * - ₹50L to ₹100L: increment is +₹5 Lakhs (5L)
+ * - ₹100L to ₹200L: increment is +₹10 Lakhs (10L)
+ * - ₹200L and above: increment is +₹20 Lakhs (20L)
+ */
+export function getBidIncrement(currentBidLakhs: number): number {
+  if (currentBidLakhs < 50) return 2;
+  if (currentBidLakhs < 100) return 5;
+  if (currentBidLakhs < 200) return 10;
+  return 20;
+}
+
+/**
  * canBid — the core eligibility function.
  *
  * @param state    The current FranchiseState snapshot (from Redis on BE, from Zustand on FE)

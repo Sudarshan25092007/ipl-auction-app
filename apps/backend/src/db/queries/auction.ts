@@ -205,7 +205,7 @@ export async function recordPlayerSold(params: {
     await client.query(
       `INSERT INTO bid_events (id, room_id, player_id, user_id, event_type, payload, created_at)
        SELECT gen_random_uuid(), $1, $2, rm.user_id, 'player_sold',
-              jsonb_build_object('franchise', $3, 'price_lakhs', $4), NOW()
+              jsonb_build_object('franchise', $3::text, 'price_lakhs', $4::integer), NOW()
        FROM room_members rm WHERE rm.id = $5`,
       [
         params.roomId,

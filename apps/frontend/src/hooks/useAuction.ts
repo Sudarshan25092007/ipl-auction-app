@@ -41,6 +41,8 @@ export function useAuction(
     setPlayerUp,
     updateBid,
     setTimerTick,
+    setAuctionPaused,
+    setAuctionResumed,
     markPlayerSold,
     markPlayerUnsold,
     syncState,
@@ -79,12 +81,27 @@ export function useAuction(
       syncState(payload);
     };
 
+    const handleAuctionPaused = (payload: { secondsLeft: number }) => {
+      setAuctionPaused(payload.secondsLeft);
+    };
+
+    const handleAuctionResumed = (payload: { secondsLeft: number }) => {
+      setAuctionResumed(payload.secondsLeft);
+    };
+
+    const handleAuctionExtended = (payload: { secondsLeft: number }) => {
+      setTimerTick(payload.secondsLeft);
+    };
+
     socket.on(SOCKET_EVENTS.PLAYER_UP, handlePlayerUp);
     socket.on(SOCKET_EVENTS.BID_UPDATE, handleBidUpdate);
     socket.on(SOCKET_EVENTS.TIMER_TICK, handleTimerTick);
     socket.on(SOCKET_EVENTS.PLAYER_SOLD, handlePlayerSold);
     socket.on(SOCKET_EVENTS.PLAYER_UNSOLD, handlePlayerUnsold);
     socket.on(SOCKET_EVENTS.STATE_SYNC, handleStateSync);
+    socket.on('auction:paused', handleAuctionPaused);
+    socket.on('auction:resumed', handleAuctionResumed);
+    socket.on('auction:extended', handleAuctionExtended);
 
     // Re-request sync if socket disconnects and reconnects
     const handleReconnect = () => {
@@ -100,6 +117,9 @@ export function useAuction(
       socket.off(SOCKET_EVENTS.PLAYER_SOLD, handlePlayerSold);
       socket.off(SOCKET_EVENTS.PLAYER_UNSOLD, handlePlayerUnsold);
       socket.off(SOCKET_EVENTS.STATE_SYNC, handleStateSync);
+      socket.off('auction:paused', handleAuctionPaused);
+      socket.off('auction:resumed', handleAuctionResumed);
+      socket.off('auction:extended', handleAuctionExtended);
       socket.off('connect', handleReconnect);
       resetStore(); // reset store when leaving the auction view
     };
@@ -110,6 +130,8 @@ export function useAuction(
     setPlayerUp,
     updateBid,
     setTimerTick,
+    setAuctionPaused,
+    setAuctionResumed,
     markPlayerSold,
     markPlayerUnsold,
     syncState,

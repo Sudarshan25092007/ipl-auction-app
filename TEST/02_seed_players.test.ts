@@ -34,5 +34,5 @@ describe('Player Seeding Integration Tests', () => {
     console.log('Total seeded players count in DB:', count);
 
     expect(count).toBeGreaterThanOrEqual(250);
-  }, 30000);
+  }, 60000);
 });

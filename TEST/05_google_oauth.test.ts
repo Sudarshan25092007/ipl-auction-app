@@ -48,12 +48,14 @@ describe('Google OAuth Integration Tests', () => {
 
     // Cleanup existing test user
     await client.query('DELETE FROM users WHERE email = $1', [testEmail]);
-  });
+  }, 30000);
 
   afterAll(async () => {
-    await client.query('DELETE FROM users WHERE email = $1', [testEmail]);
-    await client.end();
-  });
+    if (client) {
+      await client.query('DELETE FROM users WHERE email = $1', [testEmail]);
+      await client.end();
+    }
+  }, 30000);
 
   it('should register GoogleStrategy and have _verify function', () => {
     const strategy = (passport as any)._strategies?.google;

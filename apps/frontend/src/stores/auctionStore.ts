@@ -86,6 +86,8 @@ interface AuctionState {
   }) => void;
   updateBid: (payload: BidUpdatePayload) => void;
   setTimerTick: (secondsLeft: number) => void;
+  setAuctionPaused: (secondsLeft: number) => void;
+  setAuctionResumed: (secondsLeft: number) => void;
   markPlayerSold: (payload: PlayerSoldPayload) => void;
   markPlayerUnsold: (player: Player) => void;
   syncState: (payload: StateSyncPayload) => void;
@@ -284,6 +286,20 @@ export const useAuctionStore = create<AuctionState>((set, get) => ({
   markPlayerUnsold: () =>
     set({
       auctionState: 'unsold',
+    }),
+
+  // ─── setAuctionPaused ────────────────────────────────────────────────────────
+  setAuctionPaused: (secondsLeft: number) =>
+    set({
+      auctionState: 'paused',
+      secondsLeft,
+    }),
+
+  // ─── setAuctionResumed ───────────────────────────────────────────────────────
+  setAuctionResumed: (secondsLeft: number) =>
+    set({
+      auctionState: 'bidding',
+      secondsLeft,
     }),
 
   // ─── syncState ───────────────────────────────────────────────────────────────

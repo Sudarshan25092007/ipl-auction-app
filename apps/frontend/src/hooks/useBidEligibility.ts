@@ -21,19 +21,15 @@
  */
 
 import { useMemo } from 'react';
-import { canBid, getBidRejectionMessage } from '@ipl-auction/shared';
+import {
+  canBid,
+  getBidRejectionMessage,
+  getBidIncrement,
+} from '@ipl-auction/shared';
 import type { BidRejectionReason } from '@ipl-auction/shared';
 import { useAuctionStore } from '../stores/auctionStore';
 
-/**
- * Standard IPL bidding increments (in Lakhs).
- */
-export function getBidIncrement(currentBidLakhs: number): number {
-  if (currentBidLakhs < 50) return 2;
-  if (currentBidLakhs < 100) return 5;
-  if (currentBidLakhs < 200) return 10;
-  return 20;
-}
+export { getBidIncrement };
 
 export function useBidEligibility() {
   const { currentPlayer, currentBidLakhs, myFranchiseState, auctionState } =
