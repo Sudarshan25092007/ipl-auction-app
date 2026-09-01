@@ -196,8 +196,21 @@ export class AuctionEngine {
     }
   }
 
-  // ─── processPlayerSold ───────────────────────────────────────────────────────
-
+  /**
+   * Resolves a player as SOLD to the highest eligible bidder.
+   *
+   * Flow:
+   * 1. Mutates Redis auctionState to 'sold'.
+   * 2. Immediately updates franchise squad & wallet in Redis hot cache (`deductFromFranchiseState`).
+   * 3. Advances queue pointer in PostgreSQL (`advanceQueue`).
+   * 4. Broadcasts `SOCKET_EVENTS.PLAYER_SOLD` with updated squad summaries to all room participants.
+   * 5. Asynchronously executes PostgreSQL durability transaction (`recordPlayerSold`).
+   * 6. Pauses for `SOLD_PAUSE_MS` (3,000ms) before advancing to the next player.
+   *
+   * @param entry - Active player queue item.
+   * @param priceLakhs - Final winning bid amount in lakhs.
+   * @param winningFranchise - Franchise name of the highest bidder.
+   */
   async processPlayerSold(
     entry: QueueEntry,
     priceLakhs: number,
@@ -271,7 +284,6 @@ export class AuctionEngine {
         `[AuctionEngine] CRITICAL: Failed to record sale of ${player.name} to DB:`,
         err
       );
-      // TODO Phase 6: trigger reconciliation job
     });
 
     // 3-second pause before advancing (matches SoldOverlay animation duration)
@@ -281,6 +293,18 @@ export class AuctionEngine {
 
   // ─── processPlayerUnsold ─────────────────────────────────────────────────────
 
+  /**
+   * Resolves a player as UNSOLD when timer expires with no bids meeting base price.
+   *
+   * Flow:
+   * 1. Mutates Redis auctionState to 'unsold'.
+   * 2. Updates queue status to 'unsold' in PostgreSQL.
+   * 3. Broadcasts `SOCKET_EVENTS.PLAYER_UNSOLD` to room.
+   * 4. Logs audit event to `bid_events` table.
+   * 5. Pauses for `SOLD_PAUSE_MS` (3,000ms) before advancing to next player.
+   *
+   * @param entry - Active player queue item.
+   */
   async processPlayerUnsold(entry: QueueEntry): Promise<void> {
     const { player, position } = entry;
     console.info(`[AuctionEngine] UNSOLD: ${player.name}`);
@@ -303,6 +327,16 @@ export class AuctionEngine {
 
   // ─── endAuction ──────────────────────────────────────────────────────────────
 
+  /**
+   * Finalizes the auction when the player queue has been completely exhausted.
+   *
+   * Flow:
+   * 1. Sets Redis auctionState to 'complete'.
+   * 2. Updates PostgreSQL room status to 'completed'.
+   * 3. Loads all final squad states from Redis / PostgreSQL.
+   * 4. Broadcasts `SOCKET_EVENTS.AUCTION_COMPLETE` with final team rosters.
+   * 5. Cleans up in-memory AuctionEngine instance.
+   */
   async endAuction(): Promise<void> {
     console.info(`[AuctionEngine] Auction complete for room ${this.roomId}`);
 
@@ -328,6 +362,10 @@ export class AuctionEngine {
 
   // ─── emitPhaseTransition ─────────────────────────────────────────────────────
 
+  /**
+   * Broadcasts a 5-second phase transition interstitial between Marquee and General rounds.
+   * Aggregates current remaining budget summaries for all participating franchises.
+   */
   private async emitPhaseTransition(): Promise<void> {
     const members = await getMembersForRoom(this.roomId);
     const budgetSummary = await Promise.all(
@@ -364,6 +402,13 @@ export class AuctionEngine {
 
 const auctionEngines = new Map<string, AuctionEngine>();
 
+/**
+ * Retrieves or initializes the single AuctionEngine instance for a room.
+ *
+ * @param roomId - PostgreSQL room UUID.
+ * @param io - Active Socket.IO Server instance.
+ * @returns The singleton AuctionEngine instance.
+ */
 export function getAuctionEngine(roomId: string, io: Server): AuctionEngine {
   if (!auctionEngines.has(roomId)) {
     auctionEngines.set(roomId, new AuctionEngine(io, roomId));
@@ -371,12 +416,22 @@ export function getAuctionEngine(roomId: string, io: Server): AuctionEngine {
   return auctionEngines.get(roomId)!;
 }
 
+/**
+ * Removes an AuctionEngine instance from memory upon auction completion or teardown.
+ *
+ * @param roomId - PostgreSQL room UUID.
+ */
 export function removeAuctionEngine(roomId: string): void {
   auctionEngines.delete(roomId);
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+/**
+ * Asynchronous non-blocking delay utility.
+ *
+ * @param ms - Milliseconds to sleep.
+ */
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }

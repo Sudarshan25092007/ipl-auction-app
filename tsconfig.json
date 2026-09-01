@@ -22,6 +22,6 @@
       }
     ]
   },
-  "include": ["TEST/**/*.ts", "vitest.config.ts", ".next/types/**/*.ts"],
+  "include": ["tests/**/*.ts", "vitest.config.ts", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
 }

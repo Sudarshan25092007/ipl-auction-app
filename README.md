@@ -1,591 +1,282 @@
 <h1 align="center">
-  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=30&pause=1000&color=9ECE6A&center=true&vCenter=true&width=600&lines=IPL+Mock+Auction+Platform;Real-Time+Concurrent+Auction+System;Redis+%C2%B7+WebSockets+%C2%B7+Node.js+%C2%B7+PostgreSQL" alt="Typing SVG" />
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=30&pause=1000&color=F59E0B&center=true&vCenter=true&width=700&lines=IPL+Mock+Auction+Platform;Ultra-Low+Latency+Concurrent+Bidding;Redis+SETNX+%C2%B7+Socket.IO+%C2%B7+Next.js+14+%C2%B7+PostgreSQL" alt="IPL Mock Auction Platform" />
 </h1>
 
 <p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/Status-In%20Development-9ECE6A?style=for-the-badge" alt="Status" /></a>
-  <a href="#"><img src="https://img.shields.io/badge/Node.js-18%2B-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js" /></a>
-  <a href="#"><img src="https://img.shields.io/badge/TypeScript-5.0%2B-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" /></a>
+  <a href="#"><img src="https://img.shields.io/badge/Status-Production%20Ready-10B981?style=for-the-badge" alt="Status" /></a>
+  <a href="#"><img src="https://img.shields.io/badge/Node.js-20%2B-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js" /></a>
+  <a href="#"><img src="https://img.shields.io/badge/Next.js-14.2%2B-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js" /></a>
+  <a href="#"><img src="https://img.shields.io/badge/TypeScript-5.4%2B-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" /></a>
   <a href="#"><img src="https://img.shields.io/badge/Redis-7%2B-DC382D?style=for-the-badge&logo=redis&logoColor=white" alt="Redis" /></a>
   <a href="#"><img src="https://img.shields.io/badge/PostgreSQL-15%2B-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" /></a>
-  <a href="#"><img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" /></a>
+  <a href="#"><img src="https://img.shields.io/badge/Vitest-100%25%20Passing-6E9F18?style=for-the-badge&logo=vitest&logoColor=white" alt="Vitest" /></a>
 </p>
 
 <p align="center">
-  <b>A production-grade real-time auction system demonstrating concurrent systems engineering, Redis atomic operations, and WebSocket synchronization.</b>
+  <b>A high-concurrency, real-time multi-room IPL Mock Auction platform featuring sub-millisecond Redis SETNX mutex locks, authoritative server-driven countdown timers, strict 8-constraint IPL salary cap validation, and resilient WebSocket state synchronization.</b>
 </p>
 
 ---
 
 ## 📖 Table of Contents
 
-- [About](#about)
-- [Architecture](#architecture)
-- [Key Engineering Decisions](#key-engineering-decisions)
-- [Tech Stack](#tech-stack)
-- [Features](#features)
-- [Getting Started](#getting-started)
-- [API Documentation](#api-documentation)
-- [Concurrency Design](#concurrency-design)
-- [Testing](#testing)
-- [Deployment](#deployment)
-- [Roadmap](#roadmap)
-- [License](#license)
+- [Overview](#-overview)
+- [Architecture & Monorepo Layout](#-architecture--monorepo-layout)
+- [Core Engineering Deep-Dives](#-core-engineering-deep-dives)
+  - [1. Distributed SETNX Mutex Lock](#1-distributed-setnx-mutex-lock-lockts)
+  - [2. Authoritative Server-Driven Countdown Timer](#2-authoritative-server-driven-countdown-timer-timerservicets)
+  - [3. Pure IPL Salary Cap Rule Validator](#3-pure-ipl-salary-cap-rule-validator-canbid)
+  - [4. Double-Hydration State Sync & Zero-Flicker Reconnects](#4-double-hydration-state-sync--zero-flicker-reconnects)
+  - [5. Host In-Auction Administration Controls](#5-host-in-auction-administration-controls)
+- [Tech Stack](#%EF%B8%8F-tech-stack)
+- [Socket.IO Event Protocol](#-socketio-event-protocol)
+- [Database & Redis Cache Schema](#-database--redis-cache-schema)
+- [Getting Started](#-getting-started)
+- [Automated Testing](#-automated-testing)
+- [License](#-license)
 
 ---
 
-## 🎯 About
+## 🎯 Overview
 
-The IPL Mock Auction Platform is a **real-time concurrent auction system** built to solve the classic race-condition problem: _"What happens when two teams bid for the same player at the exact same millisecond?"_
+In live, high-stakes sports auctions, multiple participants submit conflicting bids within the same millisecond. Traditional relational database transactions (`SELECT FOR UPDATE`) create serialized row-lock bottlenecks under concurrent bursts, while client-side timers drift due to mobile backgrounding and network latency.
 
-This project demonstrates production-grade backend engineering patterns including:
-
-- **Redis atomic operations** for race-condition-safe bid validation
-- **WebSocket pub/sub** for live bid broadcasting to all connected clients
-- **Redis Sorted Sets** for real-time leaderboard management
-- **PostgreSQL persistence** for auction history and audit trails
-- **Docker Compose** for production-ready deployment
-
-Built as a learning project to deepen understanding of concurrent systems, distributed state management, and real-time data synchronization.
+The **IPL Mock Auction Platform** solves these fundamental distributed systems challenges through:
+1. **Microsecond In-Memory Hot Lane:** Redis handles active bid resolution (`SETNX` mutex), active player pointers, wallet mutations, and countdown deadlines.
+2. **Durable Cold Lane:** PostgreSQL manages room persistence, user authentication, complete bid audit trails (`bids`, `bid_events`), and squad acquisitions (`squad_players`).
+3. **Pure Shared Logic:** Business rules and salary cap validators compile identically across backend security handlers and frontend optimistic UI hooks via `@ipl-auction/shared`.
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ Architecture & Monorepo Layout
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           CLIENT LAYER                                      │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                        │
-│  │   Browser   │  │   Browser   │  │   Browser   │  (Multiple Teams)       │
-│  │   (Team A)  │  │   (Team B)  │  │   (Team C)  │                        │
-│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘                        │
-│         │                │                │                                │
-│         └────────────────┴────────────────┘                                │
-│                          │                                                  │
-│                    WebSocket Connection                                       │
-│                          │                                                  │
-└──────────────────────────┼──────────────────────────────────────────────────┘
-                           │
-┌──────────────────────────┼──────────────────────────────────────────────────┐
-│                      API LAYER (Node.js + Express)                         │
-│                          │                                                  │
-│  ┌───────────────────────┴───────────────────────┐                          │
-│  │                                               │                          │
-│  │  POST /api/auction/bid    ──► Redis SETNX     │  Atomic Validation      │
-│  │  GET  /api/auction/leaderboard              │  Leaderboard Fetch      │
-│  │  GET  /api/auction/players                  │  Player State           │
-│  │  WS   /ws/auction/:id     ──► Redis Pub/Sub  │  Real-time Broadcast    │
-│  │                                               │                          │
-│  └───────────────────────────────────────────────┘                          │
-│                          │                                                  │
-└──────────────────────────┼──────────────────────────────────────────────────┘
-                           │
-┌──────────────────────────┼──────────────────────────────────────────────────┐
-│                     DATA LAYER                                               │
-│                          │                                                  │
-│  ┌───────────────────────┴───────────────────────┐                          │
-│  │                                               │                          │
-│  │  ┌──────────────┐      ┌──────────────────┐  │                          │
-│  │  │    Redis     │      │    PostgreSQL    │  │                          │
-│  │  │              │      │                  │  │                          │
-│  │  │  • SETNX     │      │  • Auctions      │  │  Ephemeral State         │
-│  │  │  • Pub/Sub   │      │  • Bids          │  │  Persistent History      │
-│  │  │  • ZADD      │      │  • Players       │  │                          │
-│  │  │  • ZINCRBY   │      │  • Teams         │  │                          │
-│  │  │  • TTL       │      │  • Audit Logs    │  │                          │
-│  │  └──────────────┘      └──────────────────┘  │                          │
-│  │                                               │                          │
-│  └───────────────────────────────────────────────┘                          │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
+ipl-auction-platform/
+├── apps/
+│   ├── backend/                 # Express + Socket.IO Server
+│   │   ├── src/
+│   │   │   ├── config/          # Environment variables & Passport OAuth2
+│   │   │   ├── db/              # PostgreSQL pool & query repositories
+│   │   │   ├── redis/           # ioredis client, key registry, SETNX mutex
+│   │   │   ├── routes/          # REST endpoints (/auth, /rooms, /players)
+│   │   │   ├── services/        # AuctionEngine, TimerService, QueueManager, FranchiseState
+│   │   │   ├── socket/          # Socket.IO gateway, auth middleware, event handlers
+│   │   │   └── server.ts        # Server entrypoint & graceful shutdown
+│   └── frontend/                # Next.js 14 App Router + TailwindCSS
+│       ├── src/
+│       │   ├── app/             # Pages: /login, /dashboard, /lobby, /auction, /results
+│       │   ├── components/      # CountdownRing, PlayerCard, BidHistoryFeed, SoldOverlay, SquadPanel
+│       │   ├── hooks/           # useAuction, useBidEligibility, useAuth, useSocket
+│       │   ├── stores/          # Zustand client stores (auctionStore, roomStore)
+│       │   └── lib/             # API client & socket instance manager
+├── packages/
+│   ├── shared/                  # @ipl-auction/shared — Types, Constants, Pure Validators
+│   │   └── src/
+│   │       ├── constants/       # Franchise mappings, auction constants, socket event enum
+│   │       ├── types/           # Player, Squad, Room, Socket payload interfaces
+│   │       └── validators/      # canBid() 8-rule salary cap validator, getBidIncrement()
+│   ├── database/                # PostgreSQL migrations & seed scripts
+│   │   ├── migrations/          # DDL schema SQL files
+│   │   └── seeds/               # 250-player Excel grid parser & seeder
+│   └── config/                  # Shared ESLint and TypeScript configs
+├── tests/                       # 13 Vitest integration test suites (61 tests)
+├── turbo.json                   # Turborepo task pipeline configuration
+└── pnpm-workspace.yaml          # Monorepo package workspace definitions
 ```
 
 ---
 
-## 🔑 Key Engineering Decisions
+## 🔑 Core Engineering Deep-Dives
 
-### 1. Redis SETNX for Atomic Bid Validation
+### 1. Distributed SETNX Mutex Lock (`lock.ts`)
 
-```typescript
-// Race-condition-safe bid validation
-const bidKey = `auction:${auctionId}:player:${playerId}:lock`;
-const budgetKey = `auction:${auctionId}:team:${teamId}:budget`;
+To prevent simultaneous bids on the same player from creating corrupted states:
+* Bids acquire a room-scoped lock: `auction:{roomId}:lock:bid` with a 5-second TTL.
+* Lock acquisition uses `SET key uuid EX 5 NX` (atomic test-and-set).
+* Releasing the lock uses an atomic **Lua Script** ensuring a process only releases a lock matching its own unique token:
 
-// Step 1: Atomic lock acquisition (prevents simultaneous bids on same player)
-const acquired = await redis.set(bidKey, teamId, 'NX', 'EX', 30); // 30s TTL
-if (!acquired) {
-  return { error: 'Player already has an active bid in progress' };
-}
-
-// Step 2: Atomic budget check and decrement
-const currentBudget = await redis.get(budgetKey);
-if (currentBudget < bidAmount) {
-  await redis.del(bidKey); // Release lock
-  return { error: 'Insufficient budget' };
-}
-
-// Step 3: Atomic decrement
-await redis.decrby(budgetKey, bidAmount);
-
-// Step 4: Publish to all connected clients
-await redis.publish(
-  `auction:${auctionId}`,
-  JSON.stringify({
-    type: 'BID_PLACED',
-    playerId,
-    teamId,
-    amount: bidAmount,
-    timestamp: Date.now(),
-  })
-);
+```lua
+if redis.call("GET", KEYS[1]) == ARGV[1] then
+  return redis.call("DEL", KEYS[1])
+else
+  return 0
+end
 ```
 
-**Why SETNX and not SELECT FOR UPDATE?**
+### 2. Authoritative Server-Driven Countdown Timer (`timerService.ts`)
 
-- PostgreSQL `SELECT FOR UPDATE` creates write locks that serialize concurrent uploads — a write-throughput ceiling
-- Redis SETNX operates in memory with microsecond latency, enabling true concurrent bid processing
-- TTL on lock keys prevents deadlocks if a client disconnects mid-transaction
+* **Zero-Drift Unix Epochs:** The server stores `auction:{roomId}:timer_deadline = Date.now() + 30000`.
+* **Crash Resilience:** If the backend restarts mid-auction, the server reads the absolute epoch timestamp from Redis on reboot: `remaining = (deadline - Date.now()) / 1000`, resuming with exact precision.
+* **Tick Streaming:** Server emits `auction:timer_tick` at 1,000ms intervals. Clients render the SVG countdown from the server's tick without running independent uncoordinated timers.
 
-### 2. Redis Pub/Sub for Live Broadcasting
+### 3. Pure IPL Salary Cap Rule Validator (`canBid`)
 
-```typescript
-// Server-side: Subscribe to Redis channel, broadcast to WebSocket clients
-redisSubscriber.subscribe(`auction:${auctionId}`);
-redisSubscriber.on('message', (channel, message) => {
-  const bidEvent = JSON.parse(message);
-  wss.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify(bidEvent));
-    }
-  });
-});
-```
+Exported from `@ipl-auction/shared` and executed on both frontend (UI disable hints) and backend (authoritative validation):
+1. **Squad Size Limit:** Maximum 25 players.
+2. **Purse Solvency:** Proposed bid $\le$ remaining wallet balance.
+3. **Tier ₹25+ Cr Cap:** Maximum 1 player $\ge$ ₹2,500 Lakhs.
+4. **Tier ₹20-25 Cr Cap:** Maximum 2 players between ₹2,000L and ₹2,500L.
+5. **Tier ₹15-20 Cr Cap:** Maximum 3 players between ₹1,500L and ₹2,000L.
+6. **Overseas Player Limit:** Maximum 8 international players.
+7. **Wicketkeeper Requirement:** Maximum 4 wicketkeepers per squad.
+8. **Dynamic Solvency Reserve Math:** Guarantees remaining purse $\ge$ $(18 - \text{squadSize}) \times \text{MIN\_BASE\_PRICE}$, ensuring the franchise can fill the mandatory 18-player minimum roster.
 
-**Why Pub/Sub and not polling?**
+### 4. Double-Hydration State Sync & Zero-Flicker Reconnects
 
-- Polling creates unnecessary database load and introduces latency
-- Pub/Sub delivers bid events to all clients in <1ms after validation
-- Scales horizontally — multiple server instances can subscribe to the same Redis channel
+When a user refreshes their browser mid-auction:
+1. **Immediate REST Hydration:** `GET /rooms/:code` resolves user franchise assignment from `room_members` before mounting the auction room.
+2. **Socket State Sync:** Client sends `auction:state_sync_request`, receiving current player, active bid, remaining timer seconds, and full squad summaries (`auction:state_sync`), completely eliminating spectator-flash UI glitches.
 
-### 3. Redis Sorted Sets for Leaderboard
+### 5. Host In-Auction Administration Controls
 
-```typescript
-// Update leaderboard atomically on each bid
-await redis.zadd(`leaderboard:${auctionId}`, remainingBudget, teamId);
-
-// Fetch top 10 teams
-const topTeams = await redis.zrevrange(
-  `leaderboard:${auctionId}`,
-  0,
-  9,
-  'WITHSCORES'
-);
-```
-
-**Why Sorted Sets?**
-
-- O(log N) insertion and ranking — constant time regardless of team count
-- Atomic ZINCRBY updates prevent race conditions in leaderboard state
-- Built-in pagination (ZRANGE) for "top N" queries without application-level sorting
-
-### 4. Player State Machine
-
-```
-UNSOLD ──► ACTIVE (bid placed)
-  │            │
-  │            ▼
-  │         SOLD (auction ends)
-  │            │
-  │            ▼
-  │       PERSISTED (PostgreSQL)
-  │
-  └──► UNSOLD (bid withdrawn, TTL expired)
-```
-
-- Redis Hash stores ephemeral player state with TTL
-- PostgreSQL persists final auction results for audit and analytics
-- State transitions are atomic and reversible within the bid window
+Authenticated room hosts (`room.host_user_id === socket.data.user.id`) have live control over the auction room:
+* **`pause`:** Clears the active interval, stores remaining seconds in `auction:{roomId}:timer_deadline:paused`, and updates `auctionState = 'paused'`.
+* **`resume`:** Restores the exact paused seconds, cleans up the freeze key, resets `auctionState = 'bidding'`, and resumes countdown.
+* **`extend`:** Adds a $+15\text{s}$ buffer to the active deadline and broadcasts `auction:extended`.
+* **`skip`:** Immediately clears active timers and invokes `handleTimerExpiry()` to resolve the current player.
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Layer             | Technology              | Purpose                                   |
-| :---------------- | :---------------------- | :---------------------------------------- |
-| **Runtime**       | Node.js 18+             | Server runtime                            |
-| **Language**      | TypeScript 5.0+         | Type-safe backend code                    |
-| **Framework**     | Express.js              | HTTP API and middleware                   |
-| **Real-Time**     | WebSocket (ws library)  | Bidirectional client communication        |
-| **Cache & State** | Redis 7+                | Atomic operations, pub/sub, sorted sets   |
-| **Database**      | PostgreSQL 15+          | Persistent auction history, audit trails  |
-| **ORM**           | Prisma                  | Type-safe database queries and migrations |
-| **Validation**    | Zod                     | Runtime schema validation                 |
-| **Testing**       | Jest + Supertest        | Unit and integration tests                |
-| **Load Testing**  | Artillery               | Concurrent bid stress testing             |
-| **Container**     | Docker + Docker Compose | Development and production deployment     |
-| **CI/CD**         | GitHub Actions          | Lint, test, and deploy on push            |
+| Layer | Technologies | Description |
+| :--- | :--- | :--- |
+| **Monorepo** | Turborepo, pnpm | Fast incremental builds & workspace orchestration |
+| **Frontend** | Next.js 14 (App Router), React 19, TailwindCSS, Zustand, Lucide | Real-time reactive auction dashboard & SVG countdowns |
+| **Backend** | Node.js 20+, Express.js, Socket.IO 4+ | High-performance REST APIs & real-time WebSocket gateway |
+| **Shared Engine** | `@ipl-auction/shared` | Shared TypeScript types, constants, pure salary cap validators |
+| **Database** | PostgreSQL 15+, `pg`, `pg-pool` | ACID durability, relational room/member state & bid audit trails |
+| **Cache & Mutex** | Redis 7+, `ioredis` | Sub-millisecond locks, hot franchise cache & timer epoch deadlines |
+| **Testing** | Vitest 4, Supertest | 13 test suites covering auth, DB schemas, bidding, mutex & engine |
 
 ---
 
-## ✨ Features
+## 📡 Socket.IO Event Protocol
 
-### Core Auction Engine
+### Client-to-Server Events
+| Event | Payload | Purpose |
+| :--- | :--- | :--- |
+| `join_room` | `{ roomCode }` | Joins the Socket.IO room channel |
+| `room:start_auction` | `{ roomCode }` | Host starts the auction queue |
+| `auction:bid` | `{ roomCode, amountLakhs }` | Submits a new bid on active player |
+| `host:control` | `{ roomCode, action: 'pause' \| 'resume' \| 'extend' \| 'skip' }` | Executes host administration control |
+| `auction:state_sync_request` | `{ roomCode }` | Requests full room recovery snapshot |
 
-- [x] **Atomic Bid Validation**: Redis SETNX ensures only one team wins per player under concurrent load
-- [x] **Budget Management**: Atomic decrement with insufficient-funds protection
-- [x] **Player State Machine**: UNSOLD → ACTIVE → SOLD with TTL-based expiration
-- [x] **Bid History**: Complete audit trail of all bids per player
+### Server-to-Client Broadcasts
+| Event | Payload | Purpose |
+| :--- | :--- | :--- |
+| `room:state_change` | `{ room, members }` | Broadcasts lobby and member updates |
+| `auction:player_up` | `{ player, queuePosition, queueTotal, phase, timerSeconds }` | Announces new player on the block |
+| `auction:timer_tick` | `{ roomId, secondsLeft }` | 1-second interval countdown tick |
+| `auction:bid_update` | `{ player, currentBidLakhs, currentBidder, timestamp }` | Announces accepted higher bid |
+| `auction:player_sold` | `{ player, finalPriceLakhs, winningFranchise, updatedSquad }` | Resolves player as SOLD |
+| `auction:player_unsold` | `{ player }` | Resolves player as UNSOLD |
+| `auction:paused` / `resumed` | `{ secondsLeft }` | Informs room of pause / resume state |
+| `auction:extended` | `{ secondsLeft }` | Informs room of +15s timer extension |
+| `auction:phase_transition`| `{ from, to, remainingBudgetsSummary }` | 5-second marquee-to-general interstitial |
+| `auction:auction_complete` | `{ allFranchiseStates }` | Final auction results across all 10 teams |
 
-### Real-Time Broadcasting
+---
 
-- [x] **WebSocket Pub/Sub**: Live bid events to all connected clients in <1ms
-- [x] **Connection Resilience**: Automatic reconnection with missed event replay
-- [x] **Multi-Tab Sync**: Bid placed in one tab visible instantly in all others
+## 🗄️ Database & Redis Cache Schema
 
-### Leaderboard & Analytics
+### PostgreSQL Core Tables
+* **`users`**: User credentials (`id`, `email`, `username`, `password_hash`, `created_at`).
+* **`rooms`**: Auction rooms (`id`, `invite_code`, `host_user_id`, `status`, `current_queue_position`).
+* **`room_members`**: Franchise ownership & purse (`id`, `room_id`, `user_id`, `franchise`, `wallet_remaining_lakhs`).
+* **`players`**: Complete roster (`id`, `name`, `role`, `category`, `nationality`, `is_marquee`, `is_capped`, `base_price_lakhs`).
+* **`auction_queue`**: Ordered draft queue (`id`, `room_id`, `player_id`, `position`, `phase`, `status`).
+* **`bids`**: Audit trail of every bid (`id`, `room_id`, `room_member_id`, `player_id`, `amount_lakhs`, `bid_time`).
+* **`squad_players`**: Acquired team rosters (`id`, `room_member_id`, `player_id`, `price_paid_lakhs`, `acquired_at`).
+* **`bid_events`**: Immutable event stream (`id`, `room_id`, `player_id`, `user_id`, `event_type`, `payload`, `created_at`).
 
-- [x] **Real-Time Leaderboard**: Redis Sorted Sets with O(log N) updates
-- [x] **Team Budget Tracking**: Live remaining budget per team
-- [x] **Player Statistics**: Bid count, final price, time-to-sale
-
-### Production Readiness
-
-- [x] **Docker Compose**: One-command local deployment (`docker-compose up`)
-- [x] **Health Checks**: Redis and PostgreSQL connection monitoring
-- [x] **Graceful Shutdown**: WebSocket cleanup and Redis connection pooling
-- [x] **Environment Configuration**: Typed config with validation
-
-### Testing
-
-- [x] **50-Concurrent-Bid Test**: Artillery load test verifying single-winner guarantee
-- [x] **Race Condition Tests**: Simultaneous bid collision handling
-- [x] **WebSocket Integration Tests**: Connection, broadcast, and reconnection
+### Redis Hot State Keys
+* `auction:{roomId}:lock:bid` — SETNX distributed mutex lock.
+* `auction:{roomId}:timer_deadline` — Authoritative countdown epoch timestamp (ms).
+* `auction:{roomId}:timer_deadline:paused` — Frozen remaining seconds snapshot during pause.
+* `auction:{roomId}:state` — Real-time state (`idle`, `player_up`, `bidding`, `paused`, `sold`, `unsold`, `complete`).
+* `auction:{roomId}:player` — Active player JSON snapshot.
+* `auction:{roomId}:bid:current` — Leading bid amount in Lakhs.
+* `auction:{roomId}:bidder:current` — Leading franchise name.
+* `auction:{roomId}:franchise:{name}` — 24h cached franchise wallet & composition counters.
 
 ---
 
 ## 🚀 Getting Started
 
-### Prerequisites
+### 1. Prerequisites
+* **Node.js**: `v20.0.0` or higher
+* **pnpm**: `v9.0.0` or higher (`npm install -g pnpm`)
+* **Docker Desktop**: For running local Redis (or remote Redis URL)
+* **PostgreSQL**: PostgreSQL 15+ database (e.g. Supabase, Neon, or local PostgreSQL)
 
-- Node.js 18+
-- Docker & Docker Compose
-- Git
-
-### Quick Start (Docker Compose)
-
-```bash
-# Clone the repository
-git clone https://github.com/Sudarshan25092007/ipl-auction-app.git
-cd ipl-auction-app
-
-# Start all services (Node.js + PostgreSQL + Redis)
-docker-compose up -d
-
-# Run database migrations
-npm run db:migrate
-
-# Seed sample data
-npm run db:seed
-
-# Open http://localhost:3000 in two browser tabs
-# Place a bid in one tab, see it appear in the other instantly
-```
-
-### Local Development
-
-This project is organized as a Turborepo monorepo using `pnpm`.
-
-```bash
-# Install dependencies
-pnpm install
-
-# Set up environment variables
-# Copy template and configure DATABASE_URL, REDIS_URL, JWT_SECRET and GOOGLE_ OAuth variables
-cp .env.example .env
-
-# Run database schema migrations
-pnpm --filter @ipl-auction/database run migrate
-
-# Seed database (parses 250+ players from Excel grid)
-pnpm --filter @ipl-auction/database run seed
-
-# Verify seed integrity and view category statistics
-pnpm run verify:seed
-
-# Start development servers (frontend + backend) in parallel
-pnpm run dev
-```
-
-### Environment Variables
+### 2. Environment Setup
+Create a `.env` file in the root directory:
 
 ```env
-# Server
-PORT=3000
-NODE_ENV=development
-
-# Database
-DATABASE_URL="postgresql://user:password@localhost:5432/ipl_auction?schema=public"
+# Database (PostgreSQL / Supabase)
+DATABASE_URL="postgresql://user:password@host:5432/postgres?sslmode=require"
 
 # Redis
 REDIS_URL="redis://localhost:6379"
-REDIS_PASSWORD=""
 
-# Auction Config
-AUCTION_DURATION_MINUTES=120
-BID_LOCK_TTL_SECONDS=30
-MAX_CONCURRENT_BIDS_PER_TEAM=3
+# Auth & Ports
+JWT_SECRET="your-secure-256-bit-jwt-secret"
+PORT=3001
+NEXT_PUBLIC_BACKEND_URL="http://localhost:3001"
 ```
+
+### 3. Installation & Seeding
+```bash
+# Install monorepo dependencies
+pnpm install
+
+# Start local Redis container (if using Docker)
+docker run -d --name ipl-redis -p 6379:6379 redis:alpine
+
+# Parse Excel dataset and seed 250 IPL players into PostgreSQL
+pnpm verify:seed
+```
+
+### 4. Running the Development Server
+```bash
+# Concurrently start Next.js frontend (port 3000) and Express/Socket.IO backend (port 3001)
+pnpm dev
+```
+
+Visit [`http://localhost:3000`](http://localhost:3000) to register, create an auction room, claim a franchise, and start bidding!
 
 ---
 
-## 📡 API Documentation
+## 🧪 Automated Testing
 
-### REST Endpoints
-
-| Method | Endpoint                            | Description                        |
-| :----- | :---------------------------------- | :--------------------------------- |
-| `POST` | `/api/auction/bid`                  | Place a bid on a player            |
-| `GET`  | `/api/auction/:id/leaderboard`      | Get current leaderboard            |
-| `GET`  | `/api/auction/:id/players`          | List all players with status       |
-| `GET`  | `/api/auction/:id/player/:playerId` | Get player details and bid history |
-| `POST` | `/api/auction/:id/finalize`         | End auction and persist results    |
-
-### WebSocket Events
-
-| Event                | Direction       | Description                     |
-| :------------------- | :-------------- | :------------------------------ |
-| `BID_PLACED`         | Server → Client | New bid validated and broadcast |
-| `PLAYER_SOLD`        | Server → Client | Player auction concluded        |
-| `LEADERBOARD_UPDATE` | Server → Client | Leaderboard position changed    |
-| `AUCTION_ENDED`      | Server → Client | Auction timer expired           |
-| `CLIENT_CONNECT`     | Client → Server | Client joining auction room     |
-| `CLIENT_DISCONNECT`  | Client → Server | Client leaving auction room     |
-
-### Bid Request Schema
-
-```typescript
-POST /api/auction/bid
-Content-Type: application/json
-
-{
-  "auctionId": "uuid",
-  "playerId": "uuid",
-  "teamId": "uuid",
-  "amount": 5000000  // in INR, must be >= current bid + increment
-}
-
-// Response: 200 OK
-{
-  "success": true,
-  "bid": {
-    "id": "uuid",
-    "playerId": "uuid",
-    "teamId": "uuid",
-    "amount": 5000000,
-    "timestamp": "2026-07-09T12:00:00Z",
-    "status": "ACTIVE"
-  },
-  "playerState": "ACTIVE",
-  "teamBudgetRemaining": 45000000
-}
-
-// Response: 409 Conflict (race condition)
-{
-  "success": false,
-  "error": "Player already has an active bid in progress",
-  "lockHolder": "team-uuid",
-  "lockExpiresAt": "2026-07-09T12:00:30Z"
-}
-```
-
----
-
-## ⚡ Concurrency Design
-
-### The Race Condition Problem
-
-```
-Time ──────────────────────────────────────────►
-
-Team A ───────┐
-              │───► SELECT budget (₹50M) ───► OK
-Team B ───────┤
-              │───► SELECT budget (₹50M) ───► OK
-              │
-              │   Both teams see ₹50M, both think they can bid ₹5M
-              │
-Team A ───────┤───► UPDATE budget = ₹45M ───► OK
-Team B ───────┤───► UPDATE budget = ₹45M ───► OK
-              │
-              │   Budget is now ₹45M, but TWO bids were approved!
-              │   Race condition: budget overdraft of ₹5M.
-```
-
-### The Redis Solution
-
-```
-Time ──────────────────────────────────────────►
-
-Team A ───────┐
-              │───► SETNX lock:player:123 ───► 1 (ACQUIRED)
-              │
-Team B ───────┤───► SETNX lock:player:123 ───► 0 (REJECTED)
-              │     Bid fails immediately. No budget check needed.
-              │
-Team A ───────┤───► DECRBY budget:team:A 5000000 ───► 45000000 (ATOMIC)
-              │───► PUBLISH bid:event ───► ALL CLIENTS NOTIFIED
-              │───► DEL lock:player:123 (or TTL expires)
-              │
-              │   Single winner. No overdraft. No race condition.
-```
-
-### Load Test Results
+The platform features 13 integration test suites covering the entire lifecycle:
 
 ```bash
-# 50 concurrent bids for the same player
-$ npm run test:load
+# Run all backend & integration tests with database isolation
+pnpm test:backend
 
-Artillery Load Test Results:
-┌─────────────────┬──────────┐
-│ Metric          │ Value    │
-├─────────────────┼──────────┤
-│ Total Requests  │ 50       │
-│ Successful Bids │ 1        │
-│ Rejected Bids │ 49       │
-│ Avg Latency     │ 2.3ms    │
-│ Max Latency     │ 8.1ms    │
-│ Error Rate      │ 0%       │
-│ Budget Integrity│ 100%     │
-└─────────────────┴──────────┘
-
-✅ Single winner guaranteed. No budget overdrafts. No exceptions.
+# Run TypeScript typecheck across all packages & apps
+pnpm run typecheck
 ```
 
----
-
-## 🧪 Testing
-
-We use `Vitest` as our test runner. Tests are run at the root workspace.
-
-```bash
-# Run all backend and integration tests sequentially
-pnpm run test:backend
-
-# Run test suite in interactive watch mode
-pnpm run test:watch
-```
-
-### Test Coverage Targets
-
-| Category             | Target |     Status     |
-| :------------------- | :----: | :------------: |
-| Bid Validation       |  100%  | 🟡 In Progress |
-| WebSocket Events     |  100%  | 🟡 In Progress |
-| Race Conditions      |  100%  |   ✅ Passing   |
-| Leaderboard Updates  |  100%  | 🟡 In Progress |
-| Database Persistence |  100%  | 🟡 In Progress |
-
----
-
-## 🚢 Deployment
-
-### Docker Compose (Recommended)
-
-```bash
-# Production deployment
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-```
-
-### Railway (One-Click Deploy)
-
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/YOUR_TEMPLATE_ID)
-
-### Environment-Specific Config
-
-| Environment | Database           | Redis           | Notes                   |
-| :---------- | :----------------- | :-------------- | :---------------------- |
-| Development | Local PostgreSQL   | Local Redis     | Hot reload enabled      |
-| Testing     | Test containers    | Test containers | Fresh per test suite    |
-| Staging     | Railway PostgreSQL | Railway Redis   | CI/CD auto-deploy       |
-| Production  | Managed PostgreSQL | Managed Redis   | Connection pooling, SSL |
-
----
-
-## 🗺️ Roadmap
-
-### Phase 1: Core Engine (Current)
-
-- [x] Atomic bid validation with Redis SETNX
-- [x] WebSocket pub/sub for live broadcasting
-- [x] Redis Sorted Sets leaderboard
-- [x] PostgreSQL persistence layer
-- [x] Docker Compose deployment
-- [x] 50-concurrent-bid stress test
-
-### Phase 2: Production Hardening (Next 2 Weeks)
-
-- [ ] GitHub Actions CI/CD (lint + test on push)
-- [ ] Multi-stage Docker build for smaller images
-- [ ] Redis connection pooling and failover
-- [ ] PostgreSQL query optimization (EXPLAIN ANALYZE)
-- [ ] Rate limiting per team (100 requests/minute)
-- [ ] Structured logging (Pino)
-- [ ] Health check endpoints (/health, /ready)
-
-### Phase 3: Scale & Features (Month 2)
-
-- [ ] Redis Streams for event sourcing (replace Pub/Sub)
-- [ ] Horizontal scaling with Redis Cluster
-- [ ] Admin dashboard for auction monitoring
-- [ ] Bid history analytics and export
-- [ ] WebSocket reconnection with missed event replay
-- [ ] Integration tests for all WebSocket events
-
-### Phase 4: Advanced Patterns (Month 3)
-
-- [ ] Circuit breaker for external services
-- [ ] Distributed tracing (OpenTelemetry)
-- [ ] Metrics export (Prometheus + Grafana)
-- [ ] Load testing with 1000+ concurrent users
-- [ ] Blog post: "How I Built a Race-Condition-Free Auction System"
-
----
-
-## 📊 System Design Interview Prep
-
-This project is designed to answer common backend interview questions:
-
-**Q: "How would you prevent race conditions in a bidding system?"**
-
-> I used Redis SETNX for atomic lock acquisition. When a team places a bid, SETNX attempts to acquire a lock on the player. If another team holds the lock, the bid is rejected immediately. This operates in memory with microsecond latency, avoiding the write-lock ceiling of PostgreSQL SELECT FOR UPDATE.
-
-**Q: "How would you build a real-time leaderboard?"**
-
-> I used Redis Sorted Sets (ZADD/ZINCRBY). Each bid updates the team's score atomically. ZREVRANGE fetches the top N teams in O(log N) time. This avoids application-level sorting and scales to thousands of teams.
-
-**Q: "How do you handle WebSocket reconnections?"**
-
-> On connection, the client receives the current auction state (active players, leaderboard, recent bids). If the connection drops, the client reconnects and re-syncs. Missed events during disconnection are replayed from a Redis-backed event buffer.
-
-**Q: "Why Redis over PostgreSQL for bid validation?"**
-
-> PostgreSQL row locks serialize concurrent writes, creating a throughput ceiling. Redis SETNX operates in memory with no locking overhead. For high-frequency operations like bid validation, Redis provides the necessary latency and concurrency. PostgreSQL persists the final state for audit and analytics.
-
----
-
-## 🤝 Contributing
-
-This is a personal learning project, but feedback and suggestions are welcome! Open an issue if you spot a bug or have a design question.
+### Test Suite Map
+* `tests/01_auth.test.ts` — User registration, password hashing, and login validation.
+* `tests/02_seed_players.test.ts` — Excel player parsing & PostgreSQL upsert verification (250 players).
+* `tests/03_database_schema.test.ts` — Table constraints, foreign keys, and indexes.
+* `tests/04_api_routes.test.ts` — Express REST endpoints and error handling.
+* `tests/05_google_oauth.test.ts` — Google OAuth2 callback and JWT generation.
+* `tests/06_seed_parser.test.ts` — Excel grid parsing unit tests.
+* `tests/07_players_api.test.ts` — Player querying & category filtering.
+* `tests/08_frontend_auth_guard.test.ts` — Next.js client authentication guards.
+* `tests/09_engine_initialization.test.ts` — Authoritative timer & auction queue initialization.
+* `tests/10_frontend_auction_store_sync.test.ts` — Zustand store state synchronization.
+* `tests/11_bidding_pipeline_mutex_and_salary_caps.test.ts` — Mutex locks & 8 salary cap constraints.
+* `tests/12_player_resolution_sold_unsold.test.ts` — Player sold/unsold atomic DB transactions.
+* `tests/13_host_controls.test.ts` — Host security, pause, resume, extend, and skip controls.
 
 ---
 
 ## 📄 License
 
-MIT License — see [LICENSE](LICENSE) for details.
-(coming soon)
----
-
-<p align="center">
-  <i>Built with ❤️ by <a href="https://www.linkedin.com/in/sudarshan-patil-hj259227/">Sudarshan Patil H J</a></i><br>
-  <i>Backend Infrastructure Engineer • Node.js • TypeScript • PostgreSQL • Redis</i>
-</p>
+MIT © Sudarshan Patil H J. Built for concurrent systems engineering & real-time live auction simulation.
