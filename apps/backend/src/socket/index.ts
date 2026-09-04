@@ -26,6 +26,7 @@
  */
 import { Server } from 'socket.io';
 import type { Server as HttpServer } from 'http';
+import { corsOriginDelegate } from '../config/cors';
 import {
   socketAuthMiddleware,
   type AuthenticatedSocket,
@@ -37,7 +38,7 @@ import { registerAuctionHandlers } from './handlers/auctionHandler';
 export function initSocketServer(httpServer: HttpServer): Server {
   const io = new Server(httpServer, {
     cors: {
-      origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
+      origin: corsOriginDelegate,
       credentials: true,
     },
     pingTimeout: 5_000, // Disconnect if no pong in 5s

@@ -1,0 +1,13 @@
+# ==============================================================================
+# Railway Configuration (railway.toml)
+# ==============================================================================
+[build]
+builder = "NIXPACKS"
+buildCommand = "pnpm install --frozen-lockfile && pnpm --filter @ipl-auction/backend run build"
+
+[deploy]
+startCommand = "node apps/backend/dist/server.js"
+healthcheckPath = "/health"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10

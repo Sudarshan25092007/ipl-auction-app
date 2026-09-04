@@ -31,6 +31,7 @@ import './config/dotenv';
 
 import passport from 'passport';
 
+import { corsOriginDelegate } from './config/cors';
 import { authRouter } from './routes/auth';
 import { roomsRouter } from './routes/rooms';
 import { playersRouter } from './routes/players';
@@ -45,13 +46,14 @@ app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 // Restricts which origins can make cross-origin requests to this API.
-// In production: origin should be the Vercel deployment URL (Phase 6).
+// Allows configured FRONTEND_URL, all Vercel preview domains (*.vercel.app), and localhost.
 // credentials: true allows cookies to be sent cross-origin (needed for Next.js middleware).
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
+    origin: corsOriginDelegate,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
 

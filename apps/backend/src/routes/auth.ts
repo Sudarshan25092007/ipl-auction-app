@@ -225,17 +225,27 @@ authRouter.get(
 authRouter.get(
   '/google/callback',
   (req, res, next) => {
-    const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:3000';
+    const primaryFrontendUrl = (
+      process.env.FRONTEND_URL?.split(',')[0] || 'http://localhost:3000'
+    )
+      .trim()
+      .replace(/\/$/, '');
+
     passport.authenticate('google', {
-      failureRedirect: `${frontendUrl}/login?error=oauth_failed`,
+      failureRedirect: `${primaryFrontendUrl}/login?error=oauth_failed`,
       session: false,
     })(req, res, next);
   },
   (req, res) => {
     const user = req.user as Express.User;
     const token = signJwt(user.sub, user.email, user.username);
-    const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:3000';
-    res.redirect(`${frontendUrl}/auth/callback?token=${token}`);
+    const primaryFrontendUrl = (
+      process.env.FRONTEND_URL?.split(',')[0] || 'http://localhost:3000'
+    )
+      .trim()
+      .replace(/\/$/, '');
+
+    res.redirect(`${primaryFrontendUrl}/auth/callback?token=${token}`);
   }
 );
 

@@ -1,7 +1,7 @@
-import { Router } from 'express';
+import { Router, type Router as ExpressRouter } from 'express';
 import { pool } from '../db/client';
 
-export const playersRouter = Router();
+export const playersRouter: ExpressRouter = Router();
 
 playersRouter.get('/', async (req, res) => {
   try {

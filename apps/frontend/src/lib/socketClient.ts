@@ -60,11 +60,13 @@ export function getSocket(): Socket {
     socket = io(BACKEND_URL, {
       // JWT passed in handshake auth → validated by socketAuthMiddleware on BE
       auth: { token: token ?? '' },
+      // Support native WebSocket with HTTP long-polling fallback for edge proxies
+      transports: ['websocket', 'polling'],
       // Don't connect until socket.connect() is explicitly called
       autoConnect: false,
       // Reconnection config — Socket.IO handles drops automatically
       reconnection: true,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 10,
       reconnectionDelay: 1_000, // 1s initial delay
       reconnectionDelayMax: 5_000, // Max 5s between attempts (exponential backoff)
     });
