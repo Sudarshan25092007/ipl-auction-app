@@ -7,6 +7,8 @@
 # Stage 1: Base Environment with pnpm
 # ------------------------------------------------------------------------------
 FROM node:22-alpine AS base
+ENV NPM_CONFIG_IGNORED_BUILD_SCRIPTS=false
+ENV PNPM_CONFIG_IGNORED_BUILD_SCRIPTS=false
 RUN corepack enable && corepack prepare pnpm@11.5.2 --activate
 WORKDIR /app
 
@@ -16,8 +18,8 @@ WORKDIR /app
 FROM base AS builder
 RUN apk add --no-cache libc6-compat
 
-# Copy root manifest and workspace configuration
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+# Copy root manifest, workspace configuration, and npmrc
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json .npmrc ./
 
 # Copy packages and backend application source
 COPY packages/ ./packages/
@@ -37,6 +39,8 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3001
+ENV NPM_CONFIG_IGNORED_BUILD_SCRIPTS=false
+ENV PNPM_CONFIG_IGNORED_BUILD_SCRIPTS=false
 
 RUN corepack enable && corepack prepare pnpm@11.5.2 --activate
 
@@ -45,7 +49,7 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 backenduser
 
 # Copy workspace configuration and pre-built artifacts
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json .npmrc ./
 COPY packages/ ./packages/
 COPY apps/backend/package.json ./apps/backend/package.json
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
