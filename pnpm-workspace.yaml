@@ -4,3 +4,6 @@ packages:
 
 onlyBuiltDependencies:
   - sharp
+  - unrs-resolver
+  - '@tailwindcss/postcss'
+  - bcryptjs
