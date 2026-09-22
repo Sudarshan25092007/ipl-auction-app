@@ -36,7 +36,11 @@ export const redis = new Redis(
   {
     lazyConnect: true, // Don't connect until first command
     maxRetriesPerRequest: 20, // Tolerate temporary connection reconnect windows
-    enableReadyCheck: true, // Wait for Redis to finish loading before accepting commands
+    enableReadyCheck: false, // Compatible with Upstash, Render Redis, and cloud providers
+    tls:
+      process.env.REDIS_URL?.startsWith('rediss://')
+        ? { rejectUnauthorized: false }
+        : undefined,
     retryStrategy: (times) => {
       // Exponential backoff: 50ms, 100ms, 200ms, 400ms... up to 2s max
       return Math.min(times * 50, 2_000);

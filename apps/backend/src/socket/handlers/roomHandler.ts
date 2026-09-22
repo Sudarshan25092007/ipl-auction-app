@@ -286,7 +286,7 @@ export function registerRoomHandlers(
             err
           );
           io.to(roomCode).to(room.id).emit('room:error', {
-            message: 'Failed to start auction engine. Please try again.',
+            message: `Failed to start auction engine: ${err?.message || 'Please try again.'}`,
           });
         });
 
