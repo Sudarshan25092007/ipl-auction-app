@@ -2,6 +2,12 @@ packages:
   - 'apps/*'
   - 'packages/*'
 
+allowBuilds:
+  sharp: true
+  unrs-resolver: true
+  '@tailwindcss/postcss': true
+  bcryptjs: true
+
 onlyBuiltDependencies:
   - sharp
   - unrs-resolver
