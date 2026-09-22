@@ -21,12 +21,16 @@ interface PlayerCardProps {
   player: Player;
 }
 
-export function formatLakhs(lakhs: number): string {
-  if (lakhs >= 100) {
-    const crores = lakhs / 100;
+export function formatLakhs(lakhs: number | undefined | null): string {
+  if (lakhs === undefined || lakhs === null || isNaN(Number(lakhs))) {
+    return '₹0 Lakhs';
+  }
+  const val = Number(lakhs);
+  if (val >= 100) {
+    const crores = val / 100;
     return `₹${crores.toFixed(2)} Cr`;
   }
-  return `₹${lakhs} Lakhs`;
+  return `₹${val} Lakhs`;
 }
 
 export function getRoleBadgeStyle(role: Player['role']): {

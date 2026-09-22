@@ -54,11 +54,12 @@ export default function PlayersPage() {
     setFilteredPlayers(result);
   }, [searchQuery, selectedRole, selectedNationality, players]);
 
-  function formatPrice(lakhs: number): string {
-    if (lakhs >= 100) {
-      return `₹${(lakhs / 100).toFixed(2)} Cr`;
+  function formatPrice(lakhs: number | undefined | null): string {
+    const val = lakhs !== undefined && lakhs !== null && !isNaN(Number(lakhs)) ? Number(lakhs) : 0;
+    if (val >= 100) {
+      return `₹${(val / 100).toFixed(2)} Cr`;
     }
-    return `₹${lakhs} Lakhs`;
+    return `₹${val} Lakhs`;
   }
 
   function getRoleColor(role: Player['role']) {
@@ -255,7 +256,7 @@ export default function PlayersPage() {
                     Base Price
                   </span>
                   <span className="text-base font-extrabold text-orange-400 bg-orange-500/5 px-3 py-1 rounded-lg border border-orange-500/10">
-                    {formatPrice(player.basePriceLakhs)}
+                    {formatPrice(player.basePriceLakhs ?? (player as any).base_price_lakhs)}
                   </span>
                 </div>
               </div>

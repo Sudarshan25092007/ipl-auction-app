@@ -45,6 +45,7 @@ export function useAuction(
     setAuctionResumed,
     markPlayerSold,
     markPlayerUnsold,
+    markAuctionComplete,
     syncState,
     resetStore,
   } = useAuctionStore();
@@ -93,12 +94,17 @@ export function useAuction(
       setTimerTick(payload.secondsLeft);
     };
 
+    const handleAuctionComplete = () => {
+      markAuctionComplete();
+    };
+
     socket.on(SOCKET_EVENTS.PLAYER_UP, handlePlayerUp);
     socket.on(SOCKET_EVENTS.BID_UPDATE, handleBidUpdate);
     socket.on(SOCKET_EVENTS.TIMER_TICK, handleTimerTick);
     socket.on(SOCKET_EVENTS.PLAYER_SOLD, handlePlayerSold);
     socket.on(SOCKET_EVENTS.PLAYER_UNSOLD, handlePlayerUnsold);
     socket.on(SOCKET_EVENTS.STATE_SYNC, handleStateSync);
+    socket.on(SOCKET_EVENTS.AUCTION_COMPLETE, handleAuctionComplete);
     socket.on('auction:paused', handleAuctionPaused);
     socket.on('auction:resumed', handleAuctionResumed);
     socket.on('auction:extended', handleAuctionExtended);
@@ -117,6 +123,7 @@ export function useAuction(
       socket.off(SOCKET_EVENTS.PLAYER_SOLD, handlePlayerSold);
       socket.off(SOCKET_EVENTS.PLAYER_UNSOLD, handlePlayerUnsold);
       socket.off(SOCKET_EVENTS.STATE_SYNC, handleStateSync);
+      socket.off(SOCKET_EVENTS.AUCTION_COMPLETE, handleAuctionComplete);
       socket.off('auction:paused', handleAuctionPaused);
       socket.off('auction:resumed', handleAuctionResumed);
       socket.off('auction:extended', handleAuctionExtended);
@@ -134,6 +141,7 @@ export function useAuction(
     setAuctionResumed,
     markPlayerSold,
     markPlayerUnsold,
+    markAuctionComplete,
     syncState,
     resetStore,
   ]);

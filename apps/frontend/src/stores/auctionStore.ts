@@ -90,6 +90,7 @@ interface AuctionState {
   setAuctionResumed: (secondsLeft: number) => void;
   markPlayerSold: (payload: PlayerSoldPayload) => void;
   markPlayerUnsold: (player: Player) => void;
+  markAuctionComplete: () => void;
   syncState: (payload: StateSyncPayload) => void;
   setSquadPlayers: (squads: Record<FranchiseName, SquadPlayerState[]>) => void;
   resetStore: () => void;
@@ -286,6 +287,14 @@ export const useAuctionStore = create<AuctionState>((set, get) => ({
   markPlayerUnsold: () =>
     set({
       auctionState: 'unsold',
+    }),
+
+  // ─── markAuctionComplete ─────────────────────────────────────────────────────
+  markAuctionComplete: () =>
+    set({
+      auctionState: 'complete',
+      currentPlayer: null,
+      secondsLeft: 0,
     }),
 
   // ─── setAuctionPaused ────────────────────────────────────────────────────────

@@ -46,9 +46,13 @@ export const authRouter: ExpressRouter = Router();
 // Setup Passport Google Strategy
 const googleClientId = process.env.GOOGLE_CLIENT_ID;
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
-const googleCallbackUrl = process.env.GOOGLE_CALLBACK_URL;
+const googleCallbackUrl =
+  process.env.GOOGLE_CALLBACK_URL ||
+  (process.env.NODE_ENV === 'production'
+    ? 'https://ipl-auction-backend-dqs8.onrender.com/auth/google/callback'
+    : 'http://localhost:3001/auth/google/callback');
 
-if (googleClientId && googleClientSecret && googleCallbackUrl) {
+if (googleClientId && googleClientSecret) {
   passport.use(
     new GoogleStrategy(
       {
@@ -81,9 +85,10 @@ if (googleClientId && googleClientSecret && googleCallbackUrl) {
       }
     )
   );
+  console.info(`[Passport] Google OAuth registered with callback URL: ${googleCallbackUrl}`);
 } else {
   console.warn(
-    '[Passport] Google OAuth environment variables are missing. Google strategy not registered.'
+    '[Passport] GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET is missing. Google strategy not registered.'
   );
 }
 
@@ -213,20 +218,33 @@ authRouter.post('/login', async (req, res) => {
 });
 
 // ─── GET /auth/google ──────────────────────────────────────────────────────────
-authRouter.get(
-  '/google',
+authRouter.get('/google', (req, res, next) => {
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    console.error(
+      '[Passport] Google OAuth client ID or secret is missing from environment variables.'
+    );
+    res.status(500).json({
+      error:
+        'Google OAuth is not configured on the backend server. Please verify GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables on Render.',
+    });
+    return;
+  }
+
   passport.authenticate('google', {
     scope: ['profile', 'email'],
     session: false,
-  })
-);
+  })(req, res, next);
+});
 
 // ─── GET /auth/google/callback ──────────────────────────────────────────────────
 authRouter.get(
   '/google/callback',
   (req, res, next) => {
     const primaryFrontendUrl = (
-      process.env.FRONTEND_URL?.split(',')[0] || 'http://localhost:3000'
+      process.env.FRONTEND_URL?.split(',')[0] ||
+      (process.env.NODE_ENV === 'production'
+        ? 'https://ipl-auction-app-frontend.vercel.app'
+        : 'http://localhost:3000')
     )
       .trim()
       .replace(/\/$/, '');
@@ -240,7 +258,10 @@ authRouter.get(
     const user = req.user as Express.User;
     const token = signJwt(user.sub, user.email, user.username);
     const primaryFrontendUrl = (
-      process.env.FRONTEND_URL?.split(',')[0] || 'http://localhost:3000'
+      process.env.FRONTEND_URL?.split(',')[0] ||
+      (process.env.NODE_ENV === 'production'
+        ? 'https://ipl-auction-app-frontend.vercel.app'
+        : 'http://localhost:3000')
     )
       .trim()
       .replace(/\/$/, '');

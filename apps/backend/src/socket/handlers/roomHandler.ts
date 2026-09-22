@@ -245,10 +245,10 @@ export function registerRoomHandlers(
           return;
         }
 
-        // Only from lobby state
-        if (room.status !== 'lobby') {
+        // Only allow starting if in lobby or active (and not completed)
+        if (room.status === 'completed') {
           socket.emit('room:error', {
-            message: 'Auction is not in lobby state.',
+            message: 'This auction has already completed.',
           });
           return;
         }
@@ -264,7 +264,9 @@ export function registerRoomHandlers(
         }
 
         // Transition room to active
-        await updateRoomStatus(room.id, 'active');
+        if (room.status === 'lobby') {
+          await updateRoomStatus(room.id, 'active');
+        }
 
         // Notify all participants that the auction is starting (3s countdown)
         io.to(roomCode).to(room.id).emit('room:auction_starting', {

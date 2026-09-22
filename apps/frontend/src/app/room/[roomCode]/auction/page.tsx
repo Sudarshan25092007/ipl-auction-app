@@ -14,7 +14,7 @@
  *   3. Right Column: Dedicated panel showing the local user's claimed franchise roster.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useSocket } from '@/hooks/useSocket';
@@ -42,7 +42,11 @@ export default function AuctionPage({
 
   const [roomCode, setRoomCode] = useState<string>('');
   const [hostUserId, setHostUserId] = useState<string | null>(null);
+  const [roomParticipants, setRoomParticipants] = useState<
+    Array<{ userId: string; franchise: FranchiseName | null }>
+  >([]);
   const [activeTab, setActiveTab] = useState<FranchiseName>('Mumbai Indians');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showPhaseInterstitial, setShowPhaseInterstitial] = useState(false);
   const [phaseTransitionData, setPhaseTransitionData] = useState<{
     from: string;
@@ -98,6 +102,9 @@ export default function AuctionPage({
           participants: Array<{ userId: string; franchise: FranchiseName | null }>;
         }>(`/rooms/${roomCode}`);
         setHostUserId(roomRes.room.hostUserId);
+        if (roomRes.participants) {
+          setRoomParticipants(roomRes.participants);
+        }
 
         // Immediate fallback: hydrate user franchise from participants list
         const me = roomRes.participants?.find((p) => p.userId === user.sub);
@@ -121,22 +128,58 @@ export default function AuctionPage({
     loadInitialData();
   }, [roomCode, user, setSquadPlayers, setStoreMyFranchise]);
 
-  // 2. Handle Phase Transition Interstitial
+  // Compute claimed opponent franchises present specifically in THIS room
+  const opponentFranchises = useMemo(() => {
+    const claimed = roomParticipants
+      .map((p) => p.franchise)
+      .filter((f): f is FranchiseName => Boolean(f));
+    const unique = Array.from(new Set(claimed));
+    return unique.filter((name) => name !== myFranchise);
+  }, [roomParticipants, myFranchise]);
+
+  // Auto-select first available opponent franchise tab
+  useEffect(() => {
+    if (opponentFranchises.length > 0 && !opponentFranchises.includes(activeTab)) {
+      setActiveTab(opponentFranchises[0]);
+    }
+  }, [opponentFranchises, activeTab]);
+
+  // 2. Listen for real-time room events (error handling & participant syncing)
   useEffect(() => {
     if (!socket || !isConnected) return;
+
+    const onRoomError = (payload: { message?: string }) => {
+      if (payload?.message) {
+        setErrorMessage(payload.message);
+        setTimeout(() => setErrorMessage(null), 5000);
+      }
+    };
+
+    const onUserJoined = (payload: { participants: Array<{ userId: string; franchise: FranchiseName | null }> }) => {
+      if (payload?.participants) setRoomParticipants(payload.participants);
+    };
+
+    const onFranchiseClaimed = (payload: { participants: Array<{ userId: string; franchise: FranchiseName | null }> }) => {
+      if (payload?.participants) setRoomParticipants(payload.participants);
+    };
 
     const onPhaseTransition = (payload: any) => {
       setPhaseTransitionData(payload);
       setShowPhaseInterstitial(true);
-      // Automatically hide the full-screen transition slide after 5 seconds
       setTimeout(() => {
         setShowPhaseInterstitial(false);
       }, 5000);
     };
 
+    socket.on('room:error', onRoomError);
+    socket.on(SOCKET_EVENTS.USER_JOINED, onUserJoined);
+    socket.on(SOCKET_EVENTS.FRANCHISE_CLAIMED, onFranchiseClaimed);
     socket.on(SOCKET_EVENTS.PHASE_TRANSITION, onPhaseTransition);
 
     return () => {
+      socket.off('room:error', onRoomError);
+      socket.off(SOCKET_EVENTS.USER_JOINED, onUserJoined);
+      socket.off(SOCKET_EVENTS.FRANCHISE_CLAIMED, onFranchiseClaimed);
       socket.off(SOCKET_EVENTS.PHASE_TRANSITION, onPhaseTransition);
     };
   }, [socket, isConnected]);
@@ -181,20 +224,6 @@ export default function AuctionPage({
   // Auth Redirects
   if (authLoading) return <LoadingSpinner message="Validating connection..." />;
   if (!user) return null;
-
-  // List of franchises for Tab selection
-  const franchises: FranchiseName[] = [
-    'Mumbai Indians',
-    'Chennai Super Kings',
-    'Royal Challengers Bengaluru',
-    'Kolkata Knight Riders',
-    'Sunrisers Hyderabad',
-    'Delhi Capitals',
-    'Rajasthan Royals',
-    'Punjab Kings',
-    'Lucknow Super Giants',
-    'Gujarat Titans',
-  ];
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
@@ -241,6 +270,22 @@ export default function AuctionPage({
           </span>
         </div>
       </header>
+
+      {/* Error Alert Toast */}
+      {errorMessage && (
+        <div className="mx-6 mt-4 p-3 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs font-semibold flex items-center justify-between animate-[fadeIn_0.2s_ease-out]">
+          <div className="flex items-center gap-2">
+            <span>⚠️</span>
+            <span>{errorMessage}</span>
+          </div>
+          <button
+            onClick={() => setErrorMessage(null)}
+            className="text-red-400 hover:text-red-200 text-xs font-bold cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Main Panel Grid */}
       <main className="flex-1 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-hidden">
@@ -412,33 +457,45 @@ export default function AuctionPage({
                 League Roster Inspector
               </h2>
               <p className="text-[10px] text-slate-600 font-semibold uppercase mt-0.5 tracking-wider">
-                Click a franchise to inspect their roster
+                Active room franchises
               </p>
             </div>
 
-            {/* Selector Grid (Filter out local user's own franchise) */}
-            <div className="grid grid-cols-2 gap-1.5 shrink-0">
-              {franchises
-                .filter((name) => name !== myFranchise)
-                .map((name) => (
-                  <button
-                    key={name}
-                    onClick={() => setActiveTab(name)}
-                    className={`py-1.5 px-2.5 rounded-xl text-left text-[11px] font-bold truncate transition-all duration-200 cursor-pointer ${
-                      activeTab === name
-                        ? 'bg-white/10 text-white border border-white/15 shadow-sm'
-                        : 'bg-white/5 text-slate-500 hover:text-slate-300 border border-transparent'
-                    }`}
-                  >
-                    {name.split(' ').pop()}
-                  </button>
-                ))}
-            </div>
+            {opponentFranchises.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-white/10 bg-slate-900/20 rounded-2xl p-4 text-center text-slate-500 space-y-2">
+                <span className="text-3xl">👥</span>
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Solo / No Opponents
+                </p>
+                <p className="text-[11px] text-slate-600 max-w-[180px]">
+                  Other participants' claimed squads in this room will appear here.
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Selector Grid (Only show other participating franchises in this room) */}
+                <div className="grid grid-cols-2 gap-1.5 shrink-0">
+                  {opponentFranchises.map((name) => (
+                    <button
+                      key={name}
+                      onClick={() => setActiveTab(name)}
+                      className={`py-1.5 px-2.5 rounded-xl text-left text-[11px] font-bold truncate transition-all duration-200 cursor-pointer ${
+                        activeTab === name
+                          ? 'bg-white/10 text-white border border-white/15 shadow-sm'
+                          : 'bg-white/5 text-slate-500 hover:text-slate-300 border border-transparent'
+                      }`}
+                    >
+                      {name.split(' ').pop()}
+                    </button>
+                  ))}
+                </div>
 
-            {/* Inspection Panel Display */}
-            <div className="flex-1 overflow-hidden">
-              <SquadPanel franchise={activeTab} showWallet={true} />
-            </div>
+                {/* Inspection Panel Display */}
+                <div className="flex-1 overflow-hidden">
+                  <SquadPanel franchise={activeTab} showWallet={true} />
+                </div>
+              </>
+            )}
           </div>
         </section>
       </main>
