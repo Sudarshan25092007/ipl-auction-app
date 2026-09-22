@@ -42,6 +42,9 @@ export async function insertAuctionQueue(
 ): Promise<void> {
   if (orderedPlayers.length === 0) return;
 
+  // Clear existing queue for this room to ensure clean idempotency
+  await pool.query(`DELETE FROM auction_queue WHERE room_id = $1`, [roomId]);
+
   // Build: INSERT INTO auction_queue VALUES ($1,$2,$3,...), ($4,$5,$6,...), ...
   const values: (string | number)[] = [];
   const placeholders: string[] = [];

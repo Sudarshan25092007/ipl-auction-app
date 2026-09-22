@@ -52,7 +52,10 @@ import type {
 import { redis } from '../../redis/client';
 import { REDIS_KEYS } from '../../redis/keys';
 import { acquireLock, releaseLock } from '../../redis/lock';
-import { loadFranchiseState } from '../../services/franchiseStateService';
+import {
+  loadFranchiseState,
+  loadAllFranchiseStates,
+} from '../../services/franchiseStateService';
 import { validateBid } from '../../services/bidValidator';
 import { getTimerService } from '../../services/timerService';
 import { getAuctionEngine } from '../../services/auctionEngine';
@@ -386,6 +389,9 @@ export function registerAuctionHandlers(
           await redis.del(REDIS_KEYS.timerDeadline(roomId));
           await redis.del(`${REDIS_KEYS.timerDeadline(roomId)}:paused`);
           await engine.endAuction();
+          io.to(roomCode).to(roomId).emit(SOCKET_EVENTS.AUCTION_COMPLETE, {
+            allFranchiseStates: await loadAllFranchiseStates(roomId),
+          });
           console.info(
             `[HostControl] Auction ended early by host (${username}) for room ${roomCode}`
           );

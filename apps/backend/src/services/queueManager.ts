@@ -81,6 +81,12 @@ interface QueueEntry {
 export async function initializeQueue(roomId: string): Promise<void> {
   console.info(`[QueueManager] Initializing queue for room ${roomId}`);
 
+  // Reset pointer in DB
+  await pool.query(
+    `UPDATE rooms SET current_queue_position = 0 WHERE id = $1`,
+    [roomId]
+  );
+
   // 1. Fetch all players from DB, split by marquee
   const { marquee, general } = await getAllPlayers();
 

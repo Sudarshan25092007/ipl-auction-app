@@ -34,16 +34,21 @@ if (!process.env.DATABASE_URL) {
 
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  max: 10, // Maximum open connections in the pool
-  idleTimeoutMillis: 30_000, // Close connections idle for 30s (frees resources)
-  connectionTimeoutMillis: 2_000, // Throw if no connection available in 2s
+  max: 20, // Increased connection pool cap
+  idleTimeoutMillis: 30_000, // Close idle connections after 30s
+  connectionTimeoutMillis: 10_000, // 10s connection acquisition timeout to prevent premature timeouts on cloud DBs
+  keepAlive: true,
+  keepAliveInitialDelayMillis: 10_000,
+  ssl:
+    process.env.DATABASE_URL.includes('supabase') ||
+    process.env.NODE_ENV === 'production'
+      ? { rejectUnauthorized: false }
+      : undefined,
 });
 
-// Crash immediately on unexpected pool-level errors (e.g., DB server gone).
-// The alternative is silently serving 500s until someone notices.
+// Non-fatal error logger for idle client drops — pg-pool automatically evicts and replaces dropped clients
 pool.on('error', (err) => {
-  console.error('[DB] Unexpected pool error:', err.message);
-  process.exit(1);
+  console.warn('[DB] Idle pool client disconnected (auto-recovering):', err.message);
 });
 
-console.info('[DB] PostgreSQL pool initialized (max: 10 connections)');
+console.info('[DB] PostgreSQL pool initialized (max: 20 connections, keepAlive enabled)');

@@ -35,7 +35,7 @@ export const redis = new Redis(
   process.env.REDIS_URL ?? 'redis://localhost:6379',
   {
     lazyConnect: true, // Don't connect until first command
-    maxRetriesPerRequest: 3, // Retry failed commands up to 3 times
+    maxRetriesPerRequest: 20, // Tolerate temporary connection reconnect windows
     enableReadyCheck: true, // Wait for Redis to finish loading before accepting commands
     retryStrategy: (times) => {
       // Exponential backoff: 50ms, 100ms, 200ms, 400ms... up to 2s max

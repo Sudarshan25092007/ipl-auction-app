@@ -73,7 +73,12 @@ app.use((req, _res, next) => {
 app.use(passport.initialize());
 
 app.use('/auth', authRouter);
+app.use('/api/auth', authRouter);
+
 app.use('/rooms', roomsRouter); // jwtAuth is applied inside roomsRouter
+app.use('/api/rooms', roomsRouter);
+
+app.use('/players', jwtAuth, playersRouter);
 app.use('/api/players', jwtAuth, playersRouter);
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
