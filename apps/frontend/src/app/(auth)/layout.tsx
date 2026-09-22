@@ -13,9 +13,12 @@
  *   (Actually it composes with the root layout — root layout wraps everything including this.)
  */
 import type { Metadata } from 'next';
+import Image from 'next/image';
+import Link from 'next/link';
+import authBg from '../../../public/images/auth-bg.jpg';
 
 export const metadata: Metadata = {
-  title: 'IPL Mock Auction — Sign In',
+  title: 'IPL Mock Auction — Authentication',
   description:
     'Sign in or create an account to join the IPL Mock Auction platform.',
 };
@@ -26,20 +29,42 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Brand header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-yellow-400 to-orange-500 mb-4 shadow-lg shadow-orange-500/30">
-            <span className="text-3xl">🏏</span>
-          </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">
-            IPL Mock Auction
-          </h1>
-          <p className="text-slate-400 text-sm mt-1">
-            Real-time franchise bidding platform
-          </p>
+    <div className="relative min-h-screen flex items-center justify-center p-4 selection:bg-cyan-500 selection:text-slate-950 overflow-x-hidden font-sans">
+      {/* ─── FULLSCREEN BACKGROUND (Fixed, Cinematic Stadium with Central Podium) ── */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-slate-950">
+        <Image
+          src={authBg}
+          alt="IPL Auction Stadium"
+          fill
+          priority
+          placeholder="blur"
+          className="object-cover object-center opacity-90 filter brightness-105"
+        />
+        {/* Subtle Dark Overlay to make the Glassmorphism Auth Card pop */}
+        <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-[1px]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-slate-950/60" />
+      </div>
+
+      {/* ─── CENTERED CARD WRAPPER ─────────────────────────────────────────────────── */}
+      <div className="relative z-10 w-full max-w-md my-8">
+        {/* Brand Header */}
+        <div className="text-center mb-6">
+          <Link href="/" className="inline-flex items-center gap-3 group">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:scale-105 transition-transform duration-200">
+              <span className="text-2xl">🏏</span>
+            </div>
+            <div className="text-left">
+              <span className="font-black text-white text-lg tracking-wider uppercase leading-none block">
+                IPL <span className="text-cyan-400">Mock Auction</span>
+              </span>
+              <span className="text-[10px] text-amber-400 font-bold tracking-widest uppercase mt-0.5 block">
+                Live Draft Arena
+              </span>
+            </div>
+          </Link>
         </div>
+
+        {/* Auth Page Content */}
         {children}
       </div>
     </div>
