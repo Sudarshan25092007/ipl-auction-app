@@ -16,6 +16,7 @@
  *   This makes the UI feel instant (~0ms perceived latency) vs waiting for
  *   round-trip (~50-200ms).
  */
+import { useState, useEffect } from 'react';
 import { FRANCHISES } from '@ipl-auction/shared';
 import type { LobbyParticipant, FranchiseName } from '@ipl-auction/shared';
 
@@ -32,14 +33,27 @@ export function FranchiseGrid({
   onSelect,
   isPending,
 }: FranchiseGridProps) {
+  const [isLocking, setIsLocking] = useState(false);
   const myParticipant = participants.find((p) => p.userId === myUserId);
   const myFranchise = myParticipant?.franchise;
+
+  // Release lock once pending completes or participants update
+  useEffect(() => {
+    if (!isPending) {
+      setIsLocking(false);
+    }
+  }, [isPending, participants]);
 
   // Build a map: franchise → who claimed it
   const claimedMap = new Map<FranchiseName, LobbyParticipant>();
   participants.forEach((p) => {
     if (p.franchise) claimedMap.set(p.franchise, p);
   });
+
+  const handleClaim = (franchiseName: FranchiseName) => {
+    setIsLocking(true);
+    onSelect(franchiseName);
+  };
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
@@ -48,13 +62,14 @@ export function FranchiseGrid({
         const isMine = f.name === myFranchise;
         const isClaimed = !!claimer;
         const isAvailable = !isClaimed && !myFranchise;
+        const isButtonDisabled = isClaimed || !!myFranchise || isPending || isLocking;
 
         return (
           <button
             key={f.name}
             id={`franchise-${f.abbreviation}`}
-            disabled={isClaimed || !!myFranchise || isPending}
-            onClick={() => isAvailable && onSelect(f.name)}
+            disabled={isButtonDisabled}
+            onClick={() => isAvailable && !isLocking && handleClaim(f.name)}
             className={`
               relative group flex flex-col items-center gap-2 p-4 rounded-xl border-2
               transition-all duration-200 text-center
@@ -63,7 +78,9 @@ export function FranchiseGrid({
                   ? 'border-green-400 bg-green-400/10 shadow-lg shadow-green-400/20 scale-105'
                   : isClaimed
                     ? 'border-white/10 bg-white/5 opacity-50 cursor-not-allowed'
-                    : 'border-white/20 bg-white/5 hover:border-orange-400/50 hover:bg-white/10 hover:scale-105 cursor-pointer'
+                    : isLocking
+                      ? 'border-white/10 bg-white/5 opacity-40 cursor-wait'
+                      : 'border-white/20 bg-white/5 hover:border-orange-400/50 hover:bg-white/10 hover:scale-105 cursor-pointer'
               }
             `}
             style={{

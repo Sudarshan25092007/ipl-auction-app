@@ -245,6 +245,15 @@ authRouter.get(
       .trim()
       .replace(/\/$/, '');
 
+    const isProd = process.env.NODE_ENV === 'production';
+    res.cookie('ipl_auction_jwt', token, {
+      httpOnly: false,
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/',
+    });
+
     res.redirect(`${primaryFrontendUrl}/auth/callback?token=${token}`);
   }
 );

@@ -316,7 +316,7 @@ export function registerAuctionHandlers(
     'host:control',
     async (payload: {
       roomCode: string;
-      action: 'pause' | 'resume' | 'skip' | 'extend';
+      action: 'pause' | 'resume' | 'skip' | 'extend' | 'end';
     }) => {
       try {
         const { roomCode, action } = payload;
@@ -380,6 +380,14 @@ export function registerAuctionHandlers(
           );
           console.info(
             `[HostControl] Timer extended to ${newSeconds}s (+15s) by host (${username}) for room ${roomCode}`
+          );
+        } else if (action === 'end') {
+          timerService.clearTimer(roomId);
+          await redis.del(REDIS_KEYS.timerDeadline(roomId));
+          await redis.del(`${REDIS_KEYS.timerDeadline(roomId)}:paused`);
+          await engine.endAuction();
+          console.info(
+            `[HostControl] Auction ended early by host (${username}) for room ${roomCode}`
           );
         }
       } catch (err) {

@@ -39,6 +39,9 @@ import { jwtAuth } from './middleware/auth';
 
 const app: Express = express();
 
+// Trust reverse proxy (Render / Railway load balancers) so secure cookies & HTTPS protocols work
+app.set('trust proxy', 1);
+
 // ─── Body Parsing Middleware ───────────────────────────────────────────────────
 // Must be registered before any route that reads req.body
 app.use(express.json({ limit: '10kb' })); // Cap payload at 10kb — prevents large-body DoS

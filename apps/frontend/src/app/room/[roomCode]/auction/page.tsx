@@ -153,10 +153,22 @@ export default function AuctionPage({
 
   // 4. Handle Host control commands
   const handleHostControl = (
-    action: 'pause' | 'resume' | 'skip' | 'extend'
+    action: 'pause' | 'resume' | 'skip' | 'extend' | 'end'
   ) => {
     if (!socket || !isConnected || !isHost) return;
+    if (action === 'end') {
+      const confirmed = window.confirm(
+        'Are you sure you want to end the auction early?'
+      );
+      if (!confirmed) return;
+    }
     socket.emit('host:control', { roomCode, action });
+  };
+
+  // 5. Handle Start Auction (Host action from idle state)
+  const handleStartAuction = () => {
+    if (!socket || !isConnected || !isHost || !roomCode) return;
+    socket.emit(SOCKET_EVENTS.START_AUCTION, { roomCode });
   };
 
   // Redirect to login if not authenticated (avoid render-time side effects)
@@ -274,17 +286,30 @@ export default function AuctionPage({
               </div>
               <div className="space-y-2">
                 <h2 className="text-2xl font-black text-white">
-                  Preparing Draft Arena
+                  {isHost ? 'Draft Arena Ready' : 'Preparing Draft Arena'}
                 </h2>
                 <p className="text-slate-400 text-xs max-w-md">
-                  Shuffling player pool and syncing franchise wallets. The first player will be on the block in moments...
+                  {isHost
+                    ? 'All systems ready. Click below to launch the live player auction for all participants.'
+                    : 'Shuffling player pool and syncing franchise wallets. Waiting for the room host to launch the draft...'}
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 text-xs font-bold text-cyan-400 bg-cyan-500/10 px-4 py-2 rounded-xl border border-cyan-500/20">
-                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-                <span>Synchronizing live draft board...</span>
-              </div>
+              {isHost ? (
+                <button
+                  id="start-auction-live-btn"
+                  onClick={handleStartAuction}
+                  disabled={!isConnected}
+                  className="px-8 py-4 bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-black text-base rounded-2xl shadow-xl shadow-orange-500/20 active:scale-95 transition-all cursor-pointer flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span>🚀</span> Start Live Auction
+                </button>
+              ) : (
+                <div className="flex items-center gap-2 text-xs font-bold text-cyan-400 bg-cyan-500/10 px-4 py-2 rounded-xl border border-cyan-500/20">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                  <span>Waiting for host to start auction...</span>
+                </div>
+              )}
             </div>
           ) : auctionState === 'complete' ? (
             <div className="flex-1 flex flex-col items-center justify-center border border-white/5 bg-slate-900/30 rounded-3xl p-8 text-center space-y-4">
@@ -331,7 +356,7 @@ export default function AuctionPage({
               <div className="flex items-center gap-2 text-amber-400 text-[11px] font-bold uppercase tracking-wider">
                 <span>🛡️ Host Administration Dashboard</span>
               </div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {auctionState === 'paused' ? (
                   <button
                     onClick={() => handleHostControl('resume')}
@@ -352,7 +377,7 @@ export default function AuctionPage({
                 <button
                   onClick={() => handleHostControl('skip')}
                   disabled={auctionState === 'idle'}
-                  className="py-2 rounded-xl font-bold text-xs bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/35 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all text-center"
+                  className="py-2 rounded-xl font-bold text-xs bg-orange-500/20 border border-orange-500/30 text-orange-300 hover:bg-orange-500/35 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all text-center"
                 >
                   ⏭ Skip Player
                 </button>
@@ -365,6 +390,14 @@ export default function AuctionPage({
                   className="py-2 rounded-xl font-bold text-xs bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/35 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all text-center"
                 >
                   ⏳ Extend +15s
+                </button>
+
+                <button
+                  id="end-auction-early-btn"
+                  onClick={() => handleHostControl('end')}
+                  className="py-2 rounded-xl font-bold text-xs bg-red-600/30 border border-red-500/50 text-red-300 hover:bg-red-600/50 cursor-pointer active:scale-95 transition-all text-center"
+                >
+                  🛑 End Auction
                 </button>
               </div>
             </div>
