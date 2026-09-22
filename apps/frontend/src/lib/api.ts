@@ -24,8 +24,11 @@
 
 import type { Player } from '@ipl-auction/shared';
 
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001';
+const BACKEND_URL = (
+  process.env.NEXT_PUBLIC_BACKEND_URL ??
+  process.env.NEXT_PUBLIC_API_URL ??
+  'http://localhost:3001'
+).replace(/\/+$/, '');
 
 const JWT_KEY = 'ipl_auction_jwt';
 
@@ -97,7 +100,8 @@ export async function fetchApi<T>(
     ...((options.headers as Record<string, string> | undefined) ?? {}),
   };
 
-  const response = await fetch(`${BACKEND_URL}${path}`, {
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  const response = await fetch(`${BACKEND_URL}${cleanPath}`, {
     ...options,
     headers,
   });

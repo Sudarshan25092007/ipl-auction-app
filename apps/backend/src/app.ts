@@ -57,6 +57,15 @@ app.use(
   })
 );
 
+// ─── URL Normalization ───────────────────────────────────────────────────────
+// Fixes potential double slashes from client base URLs (e.g. //auth/login -> /auth/login)
+app.use((req, _res, next) => {
+  if (req.url.startsWith('//')) {
+    req.url = req.url.replace(/^\/+/, '/');
+  }
+  next();
+});
+
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.use(passport.initialize());
 

@@ -33,8 +33,11 @@
 import { io, type Socket } from 'socket.io-client';
 import { getJwt } from './api';
 
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001';
+const BACKEND_URL = (
+  process.env.NEXT_PUBLIC_BACKEND_URL ??
+  process.env.NEXT_PUBLIC_API_URL ??
+  'http://localhost:3001'
+).replace(/\/+$/, '');
 
 // Module-level variable — lives for the entire browser session
 let socket: Socket | null = null;
