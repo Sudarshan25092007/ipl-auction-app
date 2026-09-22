@@ -3,7 +3,7 @@
 # ==============================================================================
 [build]
 builder = "NIXPACKS"
-buildCommand = "pnpm install --frozen-lockfile && pnpm --filter @ipl-auction/backend run build"
+buildCommand = "pnpm install --frozen-lockfile && pnpm --filter @ipl-auction/shared run build && pnpm --filter @ipl-auction/backend run build"
 
 [deploy]
 startCommand = "node apps/backend/dist/server.js"

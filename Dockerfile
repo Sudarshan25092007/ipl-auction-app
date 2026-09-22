@@ -26,8 +26,8 @@ COPY apps/backend/ ./apps/backend/
 # Install dependencies (including devDependencies required for tsc compilation)
 RUN pnpm install --frozen-lockfile
 
-# Compile TypeScript to JavaScript in apps/backend/dist
-RUN pnpm --filter @ipl-auction/backend run build
+# Compile TypeScript to JavaScript for shared package and backend
+RUN pnpm --filter @ipl-auction/shared run build && pnpm --filter @ipl-auction/backend run build
 
 # ------------------------------------------------------------------------------
 # Stage 3: Lean Production Runner
@@ -48,6 +48,7 @@ RUN addgroup --system --gid 1001 nodejs && \
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 COPY packages/ ./packages/
 COPY apps/backend/package.json ./apps/backend/package.json
+COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
 
 # Install production dependencies only to keep container image minimal (< 160MB)

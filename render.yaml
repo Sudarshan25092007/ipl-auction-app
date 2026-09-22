@@ -8,7 +8,7 @@ services:
     plan: free
     region: oregon
     rootDir: .
-    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @ipl-auction/backend run build
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @ipl-auction/shared run build && pnpm --filter @ipl-auction/backend run build
     startCommand: node apps/backend/dist/server.js
     healthCheckPath: /health
     autoDeploy: true
