@@ -78,11 +78,17 @@ export function useAuth(): AuthState {
       return;
     }
 
+    let username = decoded.username;
+    if (username && username.startsWith('google_') && decoded.email) {
+      const handle = decoded.email.split('@')[0];
+      username = handle.charAt(0).toUpperCase() + handle.slice(1);
+    }
+
     setState({
       user: {
         sub: decoded.sub,
         email: decoded.email,
-        username: decoded.username,
+        username,
       },
       isAuthenticated: true,
       isLoading: false,

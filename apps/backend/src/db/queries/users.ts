@@ -96,3 +96,33 @@ export async function isEmailTaken(email: string): Promise<boolean> {
   );
   return result.rows[0]?.exists ?? false;
 }
+
+/**
+ * Find a user by username (case-insensitive).
+ */
+export async function findUserByUsername(
+  username: string
+): Promise<UserRow | null> {
+  const result = await pool.query<UserRow>(
+    `SELECT id, email, username, password_hash, created_at
+     FROM users
+     WHERE LOWER(username) = LOWER($1)
+     LIMIT 1`,
+    [username.trim()]
+  );
+  return result.rows[0] ?? null;
+}
+
+/**
+ * Update a user's username.
+ */
+export async function updateUsername(
+  id: string,
+  username: string
+): Promise<void> {
+  await pool.query(
+    `UPDATE users SET username = $1 WHERE id = $2`,
+    [username.trim(), id]
+  );
+}
+

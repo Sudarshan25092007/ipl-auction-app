@@ -36,6 +36,8 @@ import { nanoid } from 'nanoid';
 import type { JwtPayload } from '@ipl-auction/shared';
 import {
   findUserByEmail,
+  findUserByUsername,
+  updateUsername,
   createUser,
   isEmailTaken,
   type UserRow,
@@ -63,7 +65,7 @@ if (googleClientId && googleClientSecret) {
       async (accessToken, refreshToken, profile, done) => {
         try {
           const email = profile.emails?.[0]?.value;
-          const displayName = profile.displayName || 'Google User';
+          const displayName = profile.displayName?.trim() || null;
 
           if (!email) {
             return done(new Error('No email found in Google profile'));
@@ -73,9 +75,28 @@ if (googleClientId && googleClientSecret) {
           let user = await findUserByEmail(email);
 
           if (!user) {
-            // Create user with null password_hash and random username suffix
-            const username = `google_${nanoid(6)}`;
+            // Create user with Google display name or email prefix
+            let baseUsername = displayName || email.split('@')[0] || 'User';
+            let username = baseUsername;
+            const existingByName = await findUserByUsername(username);
+            if (existingByName) {
+              username = `${baseUsername.slice(0, 15)}_${nanoid(4)}`;
+            }
             user = await createUser(email, username, null);
+          } else if (user.username.startsWith('google_')) {
+            // Upgrade legacy google_xxxx username to real display name or email prefix
+            let baseUsername = displayName || email.split('@')[0] || 'User';
+            let newUsername = baseUsername;
+            const existingByName = await findUserByUsername(newUsername);
+            if (existingByName && existingByName.id !== user.id) {
+              newUsername = `${baseUsername.slice(0, 15)}_${nanoid(4)}`;
+            }
+            try {
+              await updateUsername(user.id, newUsername);
+              user.username = newUsername;
+            } catch (updateErr) {
+              console.warn('[Passport] Failed to update legacy username:', updateErr);
+            }
           }
 
           return done(null, { ...user, sub: user.id } as Express.User);
