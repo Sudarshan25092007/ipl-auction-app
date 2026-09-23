@@ -272,6 +272,58 @@ export async function getSquadPlayersForRoom(
   return result.rows;
 }
 
+export interface UserRoomSummary {
+  id: string;
+  roomCode: string;
+  status: RoomStatus;
+  hostUserId: string;
+  franchise: string | null;
+  isHost: boolean;
+  memberCount: number;
+  createdAt: string;
+}
+
+export async function getUserRooms(userId: string): Promise<UserRoomSummary[]> {
+  const result = await pool.query<{
+    id: string;
+    roomCode: string;
+    status: RoomStatus;
+    hostUserId: string;
+    franchise: string | null;
+    isHost: boolean;
+    memberCount: string;
+    createdAt: string;
+  }>(
+    `SELECT 
+       r.id,
+       r.invite_code AS "roomCode",
+       r.status,
+       r.host_user_id AS "hostUserId",
+       rm.franchise,
+       (r.host_user_id = $1) AS "isHost",
+       (SELECT COUNT(*) FROM room_members WHERE room_id = r.id) AS "memberCount",
+       r.created_at AS "createdAt"
+     FROM room_members rm
+     JOIN rooms r ON rm.room_id = r.id
+     WHERE rm.user_id = $1
+     ORDER BY r.created_at DESC
+     LIMIT 10`,
+    [userId]
+  );
+
+  return result.rows.map((row) => ({
+    id: row.id,
+    roomCode: row.roomCode,
+    status: row.status,
+    hostUserId: row.hostUserId,
+    franchise: row.franchise,
+    isHost: Boolean(row.isHost),
+    memberCount: parseInt(row.memberCount, 10) || 1,
+    createdAt: row.createdAt,
+  }));
+}
+
+
 /** Type guard for PostgreSQL errors */
 function isPostgresError(
   err: unknown

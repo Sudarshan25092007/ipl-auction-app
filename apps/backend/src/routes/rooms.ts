@@ -112,6 +112,19 @@ roomsRouter.post('/join', async (req, res) => {
   }
 });
 
+// ─── GET /rooms/my/recent — Get user's active & recent rooms ────────────────
+roomsRouter.get('/my/recent', async (req, res) => {
+  try {
+    const userId = req.user!.sub;
+    const { getUserRooms } = await import('../db/queries/rooms');
+    const rooms = await getUserRooms(userId);
+    res.json({ rooms });
+  } catch (err) {
+    console.error('[Rooms] Get user rooms error:', err);
+    res.status(500).json({ error: 'Failed to load user rooms.' });
+  }
+});
+
 // ─── GET /rooms/:code — Get room data and member list ────────────────────────
 roomsRouter.get('/:code', async (req, res) => {
   try {
@@ -205,7 +218,12 @@ roomsRouter.get('/:code/squads', async (req, res) => {
       });
     });
 
-    res.json({ squads });
+    const members = await getMembersForRoom(room.id);
+    const participatingFranchises = members
+      .map((m) => m.franchise)
+      .filter((f): f is string => Boolean(f));
+
+    res.json({ squads, participatingFranchises });
   } catch (err) {
     console.error('[Rooms] Get squads error:', err);
     res.status(500).json({ error: 'Failed to load squads.' });
