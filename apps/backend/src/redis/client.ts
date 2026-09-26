@@ -231,6 +231,25 @@ export const redis = {
     return count;
   },
 
+  async hgetall(key: string): Promise<Record<string, string>> {
+    if (isRedisHealthy) {
+      try {
+        const val = await rawRedis.hgetall(key);
+        if (val && Object.keys(val).length > 0) return val;
+      } catch (err) {
+        console.warn(`[Redis] hgetall('${key}') failed, using fallback:`, (err as Error).message);
+      }
+    }
+
+    const hash = memoryHashes.get(key);
+    if (!hash) return {};
+    const obj: Record<string, string> = {};
+    for (const [k, v] of hash.entries()) {
+      obj[k] = v;
+    }
+    return obj;
+  },
+
   async expire(key: string, seconds: number): Promise<number> {
     const entry = memoryStore.get(key);
     if (entry) {

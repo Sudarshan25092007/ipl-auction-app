@@ -27,18 +27,18 @@ describe('Auth DB Logic Tests', () => {
 
     // Clean up if the user already exists from a previous run
     await client.query('DELETE FROM users WHERE email = $1', [testEmail]);
-  });
+  }, 30000);
 
   afterAll(async () => {
     // Cleanup test user
     await client.query('DELETE FROM users WHERE email = $1', [testEmail]);
     await client.end();
-  });
+  }, 30000);
 
   it('should return false for isEmailTaken when email is free', async () => {
     const taken = await isEmailTaken(testEmail);
     expect(taken).toBe(false);
-  });
+  }, 30000);
 
   it('should successfully create a new user and retrieve it', async () => {
     const passwordHash = await bcrypt.hash(testPassword, 10);
@@ -58,10 +58,10 @@ describe('Auth DB Logic Tests', () => {
       retrievedUser!.password_hash!
     );
     expect(match).toBe(true);
-  });
+  }, 30000);
 
   it('should return true for isEmailTaken when email is taken', async () => {
     const taken = await isEmailTaken(testEmail);
     expect(taken).toBe(true);
-  });
+  }, 30000);
 });

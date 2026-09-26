@@ -35,6 +35,8 @@ import { registerRoomHandlers } from './handlers/roomHandler';
 import { registerDisconnectHandler } from './handlers/disconnectHandler';
 import { registerAuctionHandlers } from './handlers/auctionHandler';
 
+let ioInstance: Server | null = null;
+
 export function initSocketServer(httpServer: HttpServer): Server {
   const io = new Server(httpServer, {
     cors: {
@@ -44,6 +46,8 @@ export function initSocketServer(httpServer: HttpServer): Server {
     pingTimeout: 5_000, // Disconnect if no pong in 5s
     pingInterval: 25_000, // Ping every 25s
   });
+
+  ioInstance = io;
 
   // ─── Global Auth Middleware ─────────────────────────────────────────────────
   // Runs for EVERY connection before any event handler is registered.
@@ -76,4 +80,12 @@ export function initSocketServer(httpServer: HttpServer): Server {
 
   console.info('[Socket] Socket.IO server initialized');
   return io;
+}
+
+export function getIO(): Server {
+  if (!ioInstance) {
+    // If not initialized yet (e.g. in standalone tests), create a dummy/mock-safe instance
+    return new Server();
+  }
+  return ioInstance;
 }

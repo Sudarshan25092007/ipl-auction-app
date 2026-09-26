@@ -163,18 +163,18 @@ describe('Authoritative TimerService & AuctionEngine Initialization Integration 
       // 2. Start Auction
       await engine.startAuction();
 
-      // 3. Verify PostgreSQL auction_queue table was populated (250 players)
+      // 3. Verify PostgreSQL auction_queue table was populated (50 calibrated players for 1 manager)
       const queueDbRes = await client.query(
         'SELECT COUNT(*) as count FROM auction_queue WHERE room_id = $1',
         [testRoomId]
       );
-      expect(parseInt(queueDbRes.rows[0].count, 10)).toBeGreaterThanOrEqual(250);
+      expect(parseInt(queueDbRes.rows[0].count, 10)).toBeGreaterThanOrEqual(50);
 
-      // 4. Verify Redis cached queue exists and has 250 items
+      // 4. Verify Redis cached queue exists and has calibrated items
       const redisQueueStr = await redis.get(REDIS_KEYS.auctionQueue(testRoomId));
       expect(redisQueueStr).toBeDefined();
       const redisQueue = JSON.parse(redisQueueStr!);
-      expect(redisQueue.length).toBeGreaterThanOrEqual(250);
+      expect(redisQueue.length).toBeGreaterThanOrEqual(50);
 
       // 5. Verify Redis current player is set to player #1
       const currentPlayerStr = await redis.get(REDIS_KEYS.currentPlayer(testRoomId));
@@ -192,7 +192,7 @@ describe('Authoritative TimerService & AuctionEngine Initialization Integration 
       expect(playerUpEvent?.payload).toMatchObject({
         player: expect.objectContaining({ id: currentPlayer.id, name: currentPlayer.name }),
         queuePosition: 1,
-        queueTotal: 250,
+        queueTotal: 50,
         phase: 'marquee',
         timerSeconds: 30,
       });

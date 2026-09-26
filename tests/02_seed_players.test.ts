@@ -25,8 +25,7 @@ describe('Player Seeding Integration Tests', () => {
   it('should run seed script and have 250+ players in players table', async () => {
     // Run the seed script via child process from the project root
     const rootPath = path.resolve(__dirname, '../');
-    console.log('Running database seed script...');
-    execSync('pnpm --filter @ipl-auction/database run seed', { cwd: rootPath });
+    execSync('npx --yes tsx packages/database/seeds/seedPlayers.ts', { cwd: rootPath });
 
     // Query players count in the database
     const res = await client.query('SELECT COUNT(*) FROM players');

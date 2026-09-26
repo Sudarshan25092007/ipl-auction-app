@@ -59,14 +59,15 @@ import {
 import { validateBid } from '../../services/bidValidator';
 import { getTimerService } from '../../services/timerService';
 import { getAuctionEngine } from '../../services/auctionEngine';
-import { getRoomByCode } from '../../db/queries/rooms';
+import { getRoomByCode, isRoomMember } from '../../db/queries/rooms';
+import { HostDeadManService } from '../../services/hostDeadManService';
 import { insertBid } from '../../db/queries/auction';
 
 export function registerAuctionHandlers(
   io: Server,
   socket: AuthenticatedSocket
 ): void {
-  const { username } = socket.data.user;
+  const { id: userId, username } = socket.data.user;
 
   // ─── auction:bid_placed ─────────────────────────────────────────────────────
   socket.on(SOCKET_EVENTS.BID_PLACED, async (payload: BidPlacedPayload) => {
@@ -88,6 +89,25 @@ export function registerAuctionHandlers(
       const room = await getRoomByCode(roomCode);
       if (!room) return;
       const roomId = room.id;
+
+      // ── Security Check: Verify member is active in this room ──────────────
+      const isMember = await isRoomMember(roomId, userId);
+      if (!isMember) {
+        socket.emit(SOCKET_EVENTS.BID_REJECTED, {
+          reason: 'AUCTION_NOT_ACTIVE',
+          humanMessage: 'You are no longer an active participant in this room.',
+        });
+        return;
+      }
+
+      // ── Pause Check: Verify auction is not waiting for host ───────────────
+      if (room.status === 'waiting_host') {
+        socket.emit(SOCKET_EVENTS.BID_REJECTED, {
+          reason: 'AUCTION_NOT_ACTIVE',
+          humanMessage: 'Auction is temporarily paused waiting for host recovery.',
+        });
+        return;
+      }
 
       // ── Step 3: Load FranchiseState from Redis ─────────────────────────────
       const franchiseState = await loadFranchiseState(roomId, franchise);
@@ -248,6 +268,11 @@ export function registerAuctionHandlers(
         socket.data.roomCode = roomCode;
         socket.data.roomId = roomId;
 
+        // If room is waiting for host and reconnecting user is host, resume auction!
+        if (room.status === 'waiting_host' && room.host_user_id === userId) {
+          await HostDeadManService.handleHostReconnect(roomId, userId, io);
+        }
+
         // If franchise is missing from socket.data (page refresh), resolve it from DB membership
         let franchise = socket.data.franchise as FranchiseName | undefined;
         if (!franchise) {
@@ -308,8 +333,39 @@ export function registerAuctionHandlers(
         console.info(
           `[Auction] State sync sent to ${username} for room ${roomCode}`
         );
+
+        // Notify other managers in the room that this user is active in the auction
+        socket.to(roomCode).to(roomId).emit('auction:presence_alert', {
+          userId,
+          username,
+          franchise,
+          isAway: false,
+          reason: 'returned',
+          timestamp: Date.now(),
+        });
       } catch (err) {
         console.error('[AuctionHandler] State sync error:', err);
+      }
+    }
+  );
+
+  // ─── auction:manager_presence (Tab switch, blur/focus, offline events) ───────
+  socket.on(
+    'auction:manager_presence',
+    async (payload: { roomCode: string; isAway: boolean; reason?: string }) => {
+      try {
+        const { roomCode, isAway, reason } = payload;
+        const franchise = socket.data.franchise || null;
+        socket.to(roomCode).emit('auction:presence_alert', {
+          userId,
+          username,
+          franchise,
+          isAway,
+          reason: reason || (isAway ? 'tab_switched' : 'active'),
+          timestamp: Date.now(),
+        });
+      } catch (err) {
+        console.error('[AuctionHandler] manager_presence error:', err);
       }
     }
   );

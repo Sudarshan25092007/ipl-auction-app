@@ -50,7 +50,12 @@ export type FranchiseName =
  * roomHandler.ts enforces: you cannot transition active → lobby.
  * This prevents re-opening an auction that has already started.
  */
-export type RoomStatus = 'lobby' | 'active' | 'completed';
+export type RoomStatus =
+  | 'lobby'
+  | 'active'
+  | 'completed'
+  | 'waiting_host'
+  | 'terminated';
 
 /**
  * The Room entity. Represents one auction session container.

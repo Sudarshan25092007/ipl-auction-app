@@ -51,6 +51,8 @@ import {
   updateRoomStatus,
 } from '../../db/queries/rooms';
 import { getAuctionEngine } from '../../services/auctionEngine';
+import { HostDeadManService } from '../../services/hostDeadManService';
+import { TeardownService } from '../../services/teardownService';
 import { redis } from '../../redis/client';
 import { REDIS_KEYS } from '../../redis/keys';
 
@@ -123,22 +125,23 @@ export function registerRoomHandlers(
       socket.data.roomCode = roomCode;
       socket.data.roomId = room.id;
 
-      // 5. Mark user as online in Redis presence hash.
-      //    CRITICAL: Wrapped in try/catch — presence is a UI nice-to-have (online dot).
-      //    A Redis outage must NEVER block a user from joining the lobby.
-      //    The Socket.IO join (step 3) already succeeded — the user IS in the room.
+      // 5. If host is reconnecting while room was in waiting_host status, resume auction
+      if (room.status === 'waiting_host' && room.host_user_id === userId) {
+        await HostDeadManService.handleHostReconnect(room.id, userId, io);
+      }
+
+      // 6. Mark user as online in Redis presence hash.
       try {
         await redis.hset(REDIS_KEYS.presence(roomCode), userId, '1');
         await redis.expire(REDIS_KEYS.presence(roomCode), 7_200); // 2 hour TTL
       } catch (redisErr) {
-        // Degraded mode: online indicator unavailable, join still succeeds
         console.warn(
           `[RoomHandler] Redis presence update failed for ${username} — continuing without presence tracking:`,
           (redisErr as Error).message
         );
       }
 
-      // 6. Build updated participant list and broadcast to EVERYONE in the room
+      // 7. Build updated participant list and broadcast to EVERYONE in the room
       const participants = await buildParticipantList(
         room.id,
         room.host_user_id
@@ -157,7 +160,44 @@ export function registerRoomHandlers(
     }
   });
 
-  // ─── room:franchise_select ─────────────────────────────────────────────────
+  // ─── room:leave ────────────────────────────────────────────────────────────
+  socket.on(SOCKET_EVENTS.LEAVE_ROOM, async (payload: { roomCode: string }) => {
+    try {
+      const { roomCode } = payload;
+      await TeardownService.teardownManager(roomCode, userId, io, {
+        socket,
+        username,
+        reason: 'explicit_leave',
+      });
+      socket.emit('room:left_success', { roomCode });
+    } catch (err) {
+      console.error('[RoomHandler] room:leave error:', err);
+      socket.emit('room:error', { message: 'Failed to leave room.' });
+    }
+  });
+
+  // ─── room:ready_toggle ─────────────────────────────────────────────────────
+  socket.on(
+    SOCKET_EVENTS.READY_TOGGLE,
+    async (payload: { roomCode: string; isReady: boolean }) => {
+      try {
+        const { roomCode, isReady } = payload;
+        const readyKey = `room:${roomCode}:ready`;
+        await redis.hset(readyKey, userId, isReady ? '1' : '0');
+        await redis.expire(readyKey, 7200);
+
+        const allReady = await redis.hgetall(readyKey);
+        io.to(roomCode).emit(SOCKET_EVENTS.READY_UPDATE, {
+          userId,
+          username,
+          isReady,
+          allReady,
+        });
+      } catch (err) {
+        console.error('[RoomHandler] ready_toggle error:', err);
+      }
+    }
+  );
   socket.on(
     SOCKET_EVENTS.SELECT_FRANCHISE,
     async (payload: SelectFranchisePayload) => {

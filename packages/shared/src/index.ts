@@ -60,11 +60,18 @@ export type {
   BidRejectedPayload,
   PhaseTransitionPayload,
   StateSyncPayload,
+  WaitingHostPayload,
+  AuctionResumedPayload,
+  AuctionTerminatedPayload,
+  UserLeftPayload,
+  ReadyTogglePayload,
+  ReadyUpdatePayload,
 } from './types/socket.events';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 export { FRANCHISES, FRANCHISE_MAP } from './constants/franchises';
 export type { FranchiseMeta } from './constants/franchises';
+export { POOL_CONFIG, calculatePoolSize } from './constants/pool.constants';
 
 export {
   WALLET_TOTAL_LAKHS,
@@ -94,3 +101,4 @@ export {
   getBidRejectionMessage,
   getBidIncrement,
 } from './validators/bidEligibility';
+

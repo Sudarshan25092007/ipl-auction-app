@@ -59,6 +59,16 @@ export const REDIS_KEYS = {
   franchiseState: (roomId: string, franchise: string) =>
     `auction:${roomId}:franchise:${franchise}` as const,
 
+  // ─── Host Dead Man's Switch (Phase 1) ───────────────────────────────────────
+  hostDeadmanToken: (roomId: string) =>
+    `auction:${roomId}:host_deadman_token` as const,
+  hostDeadmanDeadline: (roomId: string) =>
+    `auction:${roomId}:host_deadman_deadline` as const,
+
+  // ─── Teardown Idempotency Lock ──────────────────────────────────────────────
+  teardownLock: (roomId: string, userId: string) =>
+    `auction:${roomId}:teardown_lock:${userId}` as const,
+
   // ─── Rate Limiting (Phase 6) ────────────────────────────────────────────────
   // Sorted set: member=timestamp, score=timestamp (sliding window)
   bidRateLimit: (userId: string) => `ratelimit:bid:${userId}` as const,

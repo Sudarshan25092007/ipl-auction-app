@@ -3,20 +3,22 @@
 /**
  * apps/frontend/src/components/auction/BidHistoryFeed.tsx
  *
- * MAJOR FUNCTION: Displays the chronological stream of bids placed on the current player.
- * Automatically scrolls to the bottom on new bids, highlighting team names with their themes.
- *
- * SYSTEM CONCEPT — Dom Mutation in React hooks:
- *   When a new bid comes in, we want the container to scroll down to reveal it.
- *   We use a `useRef` referencing the container element and a `useEffect` that listens to
- *   `bidHistory` changes. When the array changes, we call `scrollIntoView({ behavior: 'smooth' })`
- *   on a dummy anchor element placed at the bottom.
+ * Compact Scrolling Terminal-Style Bid Feed.
+ * Format: HH:MM:SS  FRANCHISE_CODE → ₹X.XX Cr
  */
-
 import { useEffect, useRef } from 'react';
 import { FRANCHISE_MAP } from '@ipl-auction/shared';
 import { useAuctionStore } from '../../stores/auctionStore';
 import { formatLakhs } from './PlayerCard';
+
+function formatTimestamp(timestamp: number): string {
+  try {
+    const d = new Date(timestamp);
+    return d.toTimeString().split(' ')[0]; // HH:MM:SS
+  } catch {
+    return '--:--:--';
+  }
+}
 
 export function BidHistoryFeed() {
   const bidHistory = useAuctionStore((state) => state.bidHistory);
@@ -34,81 +36,83 @@ export function BidHistoryFeed() {
 
   if (auctionState === 'idle') {
     return (
-      <div className="flex flex-col items-center justify-center h-48 border border-white/5 bg-white/5 rounded-2xl p-6 text-center text-slate-500">
-        <span className="text-3xl mb-1">⏳</span>
-        <span className="text-sm font-medium">
-          Waiting for auction to begin...
-        </span>
+      <div className="flex flex-col items-center justify-center h-28 border border-slate-800 bg-slate-950/60 rounded-2xl p-4 text-center text-slate-500 font-mono text-xs">
+        <span className="text-xl mb-1">⏳</span>
+        <span>TERMINAL IDLE — WAITING FOR AUCTION START</span>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-64 border border-white/10 bg-black/20 rounded-2xl p-4 md:p-5 backdrop-blur-sm shadow-inner overflow-hidden">
-      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 shrink-0">
-        Bid History Feed
-      </h3>
+    <div className="flex flex-col h-44 border border-slate-800/90 bg-slate-950/90 rounded-2xl p-3.5 backdrop-blur-md shadow-inner overflow-hidden font-mono">
+      {/* Terminal Header */}
+      <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800/80 shrink-0">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-rose-500/80" />
+            <span className="w-2 h-2 rounded-full bg-amber-500/80" />
+            <span className="w-2 h-2 rounded-full bg-emerald-500/80" />
+          </div>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
+            LIVE BID TERMINAL
+          </span>
+        </div>
+        <span className="text-[10px] text-cyan-400 font-bold">
+          {bidHistory.length} {bidHistory.length === 1 ? 'BID' : 'BIDS'}
+        </span>
+      </div>
 
       {bidHistory.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-slate-500 text-center px-4 py-8">
-          <span className="text-2xl mb-1">🎯</span>
-          <p className="text-sm font-semibold">No bids yet</p>
-          <p className="text-xs text-slate-600 mt-1">
+        <div className="flex-1 flex flex-col items-center justify-center text-slate-500 text-center px-4">
+          <p className="text-xs text-slate-400">⚡ NO BIDS RECORDED</p>
+          <p className="text-[10px] text-slate-500 mt-1">
             {currentPlayer
-              ? `Start the bidding at ${formatLakhs(currentPlayer.basePriceLakhs)}!`
+              ? `Base price on the floor: ${formatLakhs(currentPlayer.basePriceLakhs)}`
               : ''}
           </p>
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto space-y-2.5 pr-2 custom-scrollbar">
-          {/* Reverse order since new entries are unshifted at the top of Zustand array,
-              but for vertical history we want chronological scroll-to-bottom.
-              So we slice and reverse here. */}
+        <div className="flex-1 overflow-y-auto space-y-1.5 pr-1.5 scrollbar-thin text-xs">
           {bidHistory
             .slice()
             .reverse()
             .map((entry, index) => {
               const meta = FRANCHISE_MAP[entry.bidder];
-              const badgeStyle = meta
-                ? {
-                    borderLeft: `4px solid ${meta.primaryColor}`,
-                    background: `${meta.primaryColor}15`,
-                  }
-                : {};
+              const isLatest = index === bidHistory.length - 1;
 
               return (
                 <div
                   key={`${entry.timestamp}-${index}`}
-                  className="flex items-center justify-between p-3 rounded-xl border border-white/5 transition-all duration-300 hover:bg-white/5 animate-[fadeIn_0.3s_ease-out]"
-                  style={badgeStyle}
+                  className={`flex items-center justify-between py-1 px-2.5 rounded-lg border transition-all ${
+                    isLatest
+                      ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-200'
+                      : 'bg-slate-900/50 border-slate-800/60 text-slate-300 hover:bg-slate-800/40'
+                  }`}
                 >
                   <div className="flex items-center gap-2.5">
-                    {/* Small team dot */}
-                    <div
-                      className="w-2.5 h-2.5 rounded-full"
-                      style={{ backgroundColor: meta?.primaryColor ?? '#FFF' }}
-                    />
-                    <span className="text-sm font-bold text-white tracking-tight">
+                    <span className="text-[10px] text-slate-500">
+                      {formatTimestamp(entry.timestamp)}
+                    </span>
+                    <span
+                      className="font-black text-xs px-1.5 py-0.5 rounded text-white"
+                      style={{
+                        backgroundColor: meta?.primaryColor
+                          ? `${meta.primaryColor}30`
+                          : '#334155',
+                        borderLeft: `3px solid ${meta?.primaryColor || '#FFF'}`,
+                      }}
+                    >
                       {entry.bidder}
                     </span>
+                    <span className="text-slate-500">→</span>
                   </div>
 
-                  <div className="text-right flex items-center gap-3">
-                    <span className="text-sm font-black text-teal-400 font-mono">
-                      {formatLakhs(entry.amountLakhs)}
-                    </span>
-                    <span className="text-[10px] text-slate-600 font-mono">
-                      {new Date(entry.timestamp).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit',
-                      })}
-                    </span>
-                  </div>
+                  <span className="font-black text-emerald-400">
+                    {formatLakhs(entry.amountLakhs)}
+                  </span>
                 </div>
               );
             })}
-          {/* Scroll Target */}
           <div ref={bottomRef} />
         </div>
       )}

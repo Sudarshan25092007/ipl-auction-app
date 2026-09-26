@@ -31,6 +31,7 @@ import {
   isRoomMember,
   type SquadPlayerRecord,
 } from '../db/queries/rooms';
+import { redis } from '../redis/client';
 import type { LobbyParticipant, Player } from '@ipl-auction/shared';
 
 export const roomsRouter: ExpressRouter = Router();
@@ -112,6 +113,37 @@ roomsRouter.post('/join', async (req, res) => {
   }
 });
 
+// ─── POST /rooms/:code/leave — Explicit leave room / teardown ────────────────
+roomsRouter.post('/:code/leave', async (req, res) => {
+  try {
+    const userId = req.user!.sub;
+    const { code } = req.params;
+
+    const room = await getRoomByCode(code);
+    if (!room) {
+      res.status(404).json({ error: 'Room not found.' });
+      return;
+    }
+
+    const { TeardownService } = await import('../services/teardownService');
+    const { getIO } = await import('../socket');
+    const io = getIO();
+
+    const result = await TeardownService.teardownManager(room.id, userId, io, {
+      username: req.user?.username,
+      reason: 'explicit_http_leave',
+    });
+
+    res.json({
+      message: 'Successfully left the room.',
+      ...result,
+    });
+  } catch (err) {
+    console.error('[Rooms] Leave room error:', err);
+    res.status(500).json({ error: 'Failed to leave room.' });
+  }
+});
+
 // ─── GET /rooms/my/recent — Get user's active & recent rooms ────────────────
 roomsRouter.get('/my/recent', async (req, res) => {
   try {
@@ -155,6 +187,10 @@ roomsRouter.get('/:code', async (req, res) => {
       isHost: m.user_id === room.host_user_id,
     }));
 
+    // Fetch real-time ready states from Redis
+    const readyKey = `room:${room.invite_code}:ready`;
+    const readyMap = await redis.hgetall(readyKey);
+
     res.json({
       room: {
         id: room.id,
@@ -165,6 +201,7 @@ roomsRouter.get('/:code', async (req, res) => {
         createdAt: room.created_at,
       },
       participants,
+      readyMap: readyMap || {},
     });
   } catch (err) {
     console.error('[Rooms] Get room error:', err);

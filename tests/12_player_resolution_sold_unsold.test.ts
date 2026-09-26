@@ -98,6 +98,7 @@ describe('Phase 7: Player Resolution (Sold / Unsold) & Squad Hydration', () => {
       await client.query('DELETE FROM rooms WHERE id = $1', [testRoomId]);
     }
     if (testUserId) {
+      await client.query('DELETE FROM bid_events WHERE user_id = $1', [testUserId]);
       await client.query('DELETE FROM users WHERE id = $1', [testUserId]);
     }
     await client.end();

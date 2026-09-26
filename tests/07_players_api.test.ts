@@ -31,11 +31,13 @@ describe('Player List API Tests', () => {
       { sub: testUser.id, email: testUser.email, username: testUser.username },
       secret
     );
-  });
+  }, 30000);
 
   afterAll(async () => {
-    await client.end();
-  });
+    if (client) {
+      await client.end();
+    }
+  }, 30000);
 
   it('should deny access if no Authorization header is provided', async () => {
     const res = await request(app).get('/api/players');

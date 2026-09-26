@@ -35,6 +35,7 @@ import { corsOriginDelegate } from './config/cors';
 import { authRouter } from './routes/auth';
 import { roomsRouter } from './routes/rooms';
 import { playersRouter } from './routes/players';
+import { historyRouter } from './routes/history';
 import { jwtAuth } from './middleware/auth';
 
 const app: Express = express();
@@ -80,6 +81,9 @@ app.use('/api/rooms', roomsRouter);
 
 app.use('/players', jwtAuth, playersRouter);
 app.use('/api/players', jwtAuth, playersRouter);
+
+app.use('/history', historyRouter);
+app.use('/api/history', historyRouter);
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
 // Used by Railway's health check probe and load balancers.

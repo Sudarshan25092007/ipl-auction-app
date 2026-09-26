@@ -24,7 +24,7 @@
  */
 
 import type { Player } from './player.types';
-import type { FranchiseName } from './room.types';
+import type { FranchiseName, LobbyParticipant } from './room.types';
 import type { BidRejectionReason } from './bid.types';
 import type { SquadSummary, FranchiseState } from './squad.types';
 
@@ -34,7 +34,9 @@ export const SOCKET_EVENTS = {
   // ─── Client → Server ──────────────────────────────────────────────────────
   BID_PLACED: 'auction:bid_placed', // Bidder sends a bid attempt
   JOIN_ROOM: 'room:join', // Client joins a room socket channel
+  LEAVE_ROOM: 'room:leave', // Client explicitly leaves a room
   SELECT_FRANCHISE: 'room:franchise_select', // Participant claims a franchise
+  READY_TOGGLE: 'room:ready_toggle', // Participant toggles ready status in lobby
   START_AUCTION: 'room:start_auction', // Host-only: begins the auction
 
   // ─── Server → Room (broadcast to all members) ─────────────────────────────
@@ -44,9 +46,16 @@ export const SOCKET_EVENTS = {
   PLAYER_SOLD: 'auction:player_sold', // Timer expired, player has a winner
   PLAYER_UNSOLD: 'auction:player_unsold', // Timer expired, no valid bids
   USER_JOINED: 'room:user_joined', // Someone connected to lobby
+  USER_LEFT: 'room:user_left', // Someone left or confirmed disconnected
+  READY_UPDATE: 'room:ready_update', // Member ready status updated
   FRANCHISE_CLAIMED: 'room:franchise_claimed', // Someone picked a franchise
   PHASE_TRANSITION: 'auction:phase_transition', // Marquee → General round
   AUCTION_COMPLETE: 'auction:complete', // All players processed
+  AUCTION_WAITING_HOST: 'auction:waiting_host', // Host disconnected — 60s freeze
+  AUCTION_RESUMED: 'auction:resumed', // Host reconnected or auction resumed
+  AUCTION_TERMINATED: 'auction:terminated', // Host dead man timeout expired
+  AUCTION_PAUSED: 'auction:paused', // Host paused auction
+  AUCTION_EXTENDED: 'auction:extended', // Host extended countdown timer
 
   // ─── Server → Client (private — emitted to one specific socket) ───────────
   BID_REJECTED: 'auction:bid_rejected', // Validation failed — only bidder sees this
@@ -56,6 +65,43 @@ export const SOCKET_EVENTS = {
 /** Helper: derive the union of all socket event name string values */
 export type SocketEventName =
   (typeof SOCKET_EVENTS)[keyof typeof SOCKET_EVENTS];
+
+export interface WaitingHostPayload {
+  roomCode: string;
+  deadlineSeconds: number;
+  message: string;
+}
+
+export interface AuctionResumedPayload {
+  secondsLeft: number;
+  message?: string;
+}
+
+export interface AuctionTerminatedPayload {
+  roomCode: string;
+  reason: string;
+}
+
+export interface UserLeftPayload {
+  userId: string;
+  username: string;
+  franchise?: FranchiseName | null;
+  message: string;
+  remainingParticipants?: LobbyParticipant[];
+}
+
+export interface ReadyTogglePayload {
+  roomCode: string;
+  isReady: boolean;
+}
+
+export interface ReadyUpdatePayload {
+  userId: string;
+  username: string;
+  isReady: boolean;
+  allReady: boolean;
+}
+
 
 // ─── Client → Server Payloads ──────────────────────────────────────────────────
 
@@ -176,7 +222,7 @@ export interface StateSyncPayload {
   currentBidder: FranchiseName | null;
   secondsLeft: number;
   auctionPhase: 'marquee' | 'general';
-  auctionState: 'idle' | 'player_up' | 'bidding' | 'sold' | 'complete';
+  auctionState: 'idle' | 'player_up' | 'bidding' | 'paused' | 'waiting_host' | 'terminated' | 'sold' | 'complete';
   myFranchiseState: FranchiseState;
   queuePosition: number;
   queueTotal: number;

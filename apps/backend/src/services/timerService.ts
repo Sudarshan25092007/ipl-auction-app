@@ -147,8 +147,30 @@ export class TimerService {
   /**
    * Get the remaining seconds for a room's timer.
    * Used by STATE_SYNC for reconnecting clients (reads from Redis, not in-memory).
+   * Robust against page refresh during paused auction or host recovery window.
    */
   async getRemainingSeconds(roomId: string): Promise<number> {
+    // 1. Check if host control paused the timer
+    const pausedStr = await redis.get(
+      `${REDIS_KEYS.timerDeadline(roomId)}:paused`
+    );
+    if (pausedStr) {
+      const pausedSec = parseInt(pausedStr, 10);
+      if (!isNaN(pausedSec) && pausedSec > 0) {
+        return pausedSec;
+      }
+    }
+
+    // 2. Check if HostDeadManService froze the timer (waiting_host state)
+    const frozenStr = await redis.get(`auction:${roomId}:frozen_time`);
+    if (frozenStr) {
+      const frozenSec = parseInt(frozenStr, 10);
+      if (!isNaN(frozenSec) && frozenSec > 0) {
+        return frozenSec;
+      }
+    }
+
+    // 3. Active countdown running against absolute deadline
     const deadline = await redis.get(REDIS_KEYS.timerDeadline(roomId));
     if (!deadline) return 0;
 
@@ -158,7 +180,7 @@ export class TimerService {
 
   /**
    * Pause the timer for a room.
-   * Clears active interval, saves remaining time, emits paused events.
+   * Clears active interval, saves remaining time, clears decaying deadline, emits paused events.
    */
   async pauseTimer(roomId: string): Promise<number> {
     const remainingSeconds = await this.getRemainingSeconds(roomId);
@@ -166,8 +188,12 @@ export class TimerService {
     if (remainingSeconds > 0) {
       await redis.set(
         `${REDIS_KEYS.timerDeadline(roomId)}:paused`,
-        remainingSeconds.toString()
+        remainingSeconds.toString(),
+        'EX',
+        86400
       );
+      // Remove decaying deadline key so it cannot drift or expire while paused
+      await redis.del(REDIS_KEYS.timerDeadline(roomId));
       await redis.set(REDIS_KEYS.auctionState(roomId), 'paused');
       this.io.to(roomId).emit(SOCKET_EVENTS.TIMER_TICK, {
         roomId,

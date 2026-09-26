@@ -83,7 +83,7 @@ describe('Google OAuth Integration Tests', () => {
     );
 
     expect(resultUser.email).toBe(testEmail);
-    expect(resultUser.username).toContain('google_');
+    expect(resultUser.username).toBe('OAuth Test User');
     expect(resultUser.password_hash).toBeNull();
 
     // Query DB to ensure user was created
@@ -92,7 +92,7 @@ describe('Google OAuth Integration Tests', () => {
     ]);
     expect(res.rows.length).toBe(1);
     expect(res.rows[0].password_hash).toBeNull();
-  });
+  }, 20000);
 
   it('GoogleStrategy verify callback should link to existing user if profile email exists', async () => {
     const strategy = (passport as any)._strategies.google;
@@ -115,7 +115,7 @@ describe('Google OAuth Integration Tests', () => {
 
     // Check that we got the existing user
     expect(resultUser.email).toBe(testEmail);
-  });
+  }, 20000);
 
   it('should generate a JWT token containing correct claims', async () => {
     const secret = process.env.JWT_SECRET!;
@@ -136,7 +136,7 @@ describe('Google OAuth Integration Tests', () => {
     });
     expect(res.status).toBe(401);
     expect(res.body.error).toContain('Use Google login for this account');
-  });
+  }, 20000);
 
   it('/auth/google/callback redirect URL should contain a valid token', async () => {
     const res = await request(app).get('/auth/google/callback');

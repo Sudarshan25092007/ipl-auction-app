@@ -49,6 +49,7 @@ import {
   resolveQueueEntry,
 } from '../db/queries/auction';
 import type { Player } from '@ipl-auction/shared';
+import { calculatePoolSize, POOL_CONFIG } from '@ipl-auction/shared';
 
 // ─── Fisher-Yates Shuffle ─────────────────────────────────────────────────────
 
@@ -56,7 +57,7 @@ import type { Player } from '@ipl-auction/shared';
  * In-place Fisher-Yates shuffle. Mutates the input array.
  * O(n) time, O(1) extra space. Provably uniform distribution.
  */
-function fisherYatesShuffle<T>(arr: T[]): T[] {
+export function fisherYatesShuffle<T>(arr: T[]): T[] {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [arr[i], arr[j]] = [arr[j], arr[i]]; // ES6 destructuring swap — no temp variable
@@ -66,20 +67,150 @@ function fisherYatesShuffle<T>(arr: T[]): T[] {
 
 // ─── Queue Shape (what we store in Redis) ────────────────────────────────────
 
-interface QueueEntry {
+export interface QueueEntry {
   player: Player;
   phase: 'marquee' | 'general';
   position: number; // 1-indexed
 }
 
+// ─── Scarcity Pool Generator ──────────────────────────────────────────────────
+
+export interface CalibratedPoolResult {
+  orderedPlayers: Array<{ player: Player; phase: 'marquee' | 'general' }>;
+  targetCount: number;
+  marqueeCount: number;
+  generalCount: number;
+}
+
+/**
+ * Generates a calibrated player pool according to manager count N and category distribution.
+ * Pure function / fully testable.
+ */
+export function generateCalibratedPlayerPool(
+  allPlayers: { marquee: Player[]; general: Player[] },
+  participantCount: number
+): CalibratedPoolResult {
+  const targetCount = calculatePoolSize(participantCount);
+  const { marquee, general } = allPlayers;
+
+  // 1. Marquee target quota (approx 20% of pool or min 10, max marquee available)
+  const marqueeTarget = Math.min(
+    marquee.length,
+    Math.max(10, Math.round(targetCount * 0.2))
+  );
+  const shuffledMarquee = fisherYatesShuffle([...marquee]);
+  const selectedMarquee = shuffledMarquee.slice(0, marqueeTarget);
+
+  // 2. Remaining slots for general pool
+  const remainingSlots = targetCount - selectedMarquee.length;
+
+  // Categorize general players by role
+  const batters: Player[] = [];
+  const pacers: Player[] = [];
+  const spinners: Player[] = [];
+  const allrounders: Player[] = [];
+  const wks: Player[] = [];
+
+  for (const p of general) {
+    switch (p.role) {
+      case 'batter':
+        batters.push(p);
+        break;
+      case 'pacer':
+        pacers.push(p);
+        break;
+      case 'spinner':
+        spinners.push(p);
+        break;
+      case 'allrounder':
+        allrounders.push(p);
+        break;
+      case 'wk':
+        wks.push(p);
+        break;
+      default:
+        batters.push(p);
+    }
+  }
+
+  // Desired role distribution proportions
+  const roleWeights = [
+    { role: 'batter', pool: fisherYatesShuffle([...batters]), weight: 0.25 },
+    { role: 'pacer', pool: fisherYatesShuffle([...pacers]), weight: 0.25 },
+    { role: 'allrounder', pool: fisherYatesShuffle([...allrounders]), weight: 0.22 },
+    { role: 'spinner', pool: fisherYatesShuffle([...spinners]), weight: 0.18 },
+    { role: 'wk', pool: fisherYatesShuffle([...wks]), weight: 0.10 },
+  ];
+
+  const selectedGeneral: Player[] = [];
+  const usedPlayerIds = new Set<string>(selectedMarquee.map((p) => p.id));
+
+  // First pass: Allocate role quotas
+  for (const group of roleWeights) {
+    const quota = Math.round(remainingSlots * group.weight);
+    const available = group.pool.filter((p) => !usedPlayerIds.has(p.id));
+    const toAdd = available.slice(0, quota);
+    for (const p of toAdd) {
+      selectedGeneral.push(p);
+      usedPlayerIds.add(p.id);
+    }
+  }
+
+  // Graceful fallback / Top-off if quotas didn't fill exactly remainingSlots (or shortage in a role)
+  if (selectedGeneral.length < remainingSlots) {
+    const needed = remainingSlots - selectedGeneral.length;
+    const remainingUnusedGeneral = fisherYatesShuffle(
+      general.filter((p) => !usedPlayerIds.has(p.id))
+    );
+    const extra = remainingUnusedGeneral.slice(0, needed);
+    for (const p of extra) {
+      selectedGeneral.push(p);
+      usedPlayerIds.add(p.id);
+    }
+  }
+
+  // If still under (e.g. general exhausted), pull from remaining marquee
+  if (selectedMarquee.length + selectedGeneral.length < targetCount) {
+    const needed = targetCount - (selectedMarquee.length + selectedGeneral.length);
+    const remainingUnusedMarquee = marquee.filter((p) => !usedPlayerIds.has(p.id));
+    const extraMarquee = remainingUnusedMarquee.slice(0, needed);
+    for (const p of extraMarquee) {
+      selectedMarquee.push(p);
+      usedPlayerIds.add(p.id);
+    }
+  }
+
+  // Shuffle selected general pool for fair ordering
+  const finalShuffledGeneral = fisherYatesShuffle([...selectedGeneral]);
+
+  const orderedPlayers = [
+    ...selectedMarquee.map((p) => ({ player: p, phase: 'marquee' as const })),
+    ...finalShuffledGeneral.map((p) => ({ player: p, phase: 'general' as const })),
+  ];
+
+  return {
+    orderedPlayers,
+    targetCount,
+    marqueeCount: selectedMarquee.length,
+    generalCount: finalShuffledGeneral.length,
+  };
+}
+
 // ─── initializeQueue ─────────────────────────────────────────────────────────
 
 /**
- * Full implementation — replaces the Phase 3 stub.
+ * Initializes calibrated queue based on participant count N.
  * Called by roomHandler when host fires room:start_auction.
  */
 export async function initializeQueue(roomId: string): Promise<void> {
-  console.info(`[QueueManager] Initializing queue for room ${roomId}`);
+  console.info(`[QueueManager] Initializing scarcity-calibrated queue for room ${roomId}`);
+
+  // 1. Query participant count for this room from DB
+  const countRes = await pool.query<{ count: string }>(
+    `SELECT COUNT(*) FROM room_members WHERE room_id = $1`,
+    [roomId]
+  );
+  const participantCount = Math.max(1, parseInt(countRes.rows[0]?.count ?? '1', 10));
 
   // Reset pointer in DB
   await pool.query(
@@ -87,21 +218,17 @@ export async function initializeQueue(roomId: string): Promise<void> {
     [roomId]
   );
 
-  // 1. Fetch all players from DB, split by marquee
-  const { marquee, general } = await getAllPlayers();
+  // 2. Fetch all players from DB
+  const allPlayers = await getAllPlayers();
 
-  // 2. Shuffle each group independently (marquee first, then general)
-  const shuffledMarquee = fisherYatesShuffle([...marquee]);
-  const shuffledGeneral = fisherYatesShuffle([...general]);
-  const orderedPlayers = [
-    ...shuffledMarquee.map((p) => ({ player: p, phase: 'marquee' as const })),
-    ...shuffledGeneral.map((p) => ({ player: p, phase: 'general' as const })),
-  ];
+  // 3. Generate calibrated player pool
+  const { orderedPlayers, targetCount, marqueeCount, generalCount } =
+    generateCalibratedPlayerPool(allPlayers, participantCount);
 
-  // 3. Bulk INSERT into auction_queue table (one round trip for 94 players)
+  // 4. Bulk INSERT into auction_queue table
   await insertAuctionQueue(roomId, orderedPlayers);
 
-  // 4. Build QueueEntry[] and cache as JSON in Redis (24h TTL)
+  // 5. Build QueueEntry[] and cache as JSON in Redis (24h TTL)
   const queueEntries: QueueEntry[] = orderedPlayers.map((item, index) => ({
     player: item.player,
     phase: item.phase,
@@ -112,15 +239,15 @@ export async function initializeQueue(roomId: string): Promise<void> {
     REDIS_KEYS.auctionQueue(roomId),
     JSON.stringify(queueEntries),
     'EX',
-    86_400 // 24 hours TTL — longer than any possible auction
+    86_400 // 24 hours TTL
   );
 
-  // 5. Initialize auction state in Redis
+  // 6. Initialize auction state in Redis
   await redis.set(REDIS_KEYS.auctionState(roomId), 'idle');
   await redis.set(REDIS_KEYS.currentBid(roomId), '0');
 
   console.info(
-    `[QueueManager] Queue initialized: ${shuffledMarquee.length} marquee + ${shuffledGeneral.length} general players`
+    `[QueueManager] Calibrated queue initialized for N=${participantCount} managers: ${targetCount} players (${marqueeCount} marquee + ${generalCount} general)`
   );
 }
 
@@ -267,5 +394,3 @@ async function rebuildQueueFromDB(
     position: row.position,
   }));
 }
-
-export type { QueueEntry };

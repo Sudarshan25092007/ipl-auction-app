@@ -37,6 +37,15 @@ export function CountdownRing() {
 
   // Dynamic color coding & urgency stage
   const colorStage = useMemo(() => {
+    if (auctionState === 'paused' || auctionState === 'waiting_host') {
+      return {
+        textColor: 'text-amber-300',
+        strokeClass: 'stroke-amber-400',
+        glowStyle: { filter: 'drop-shadow(0px 0px 10px rgba(251, 191, 36, 0.5))' },
+        bgGlow: 'bg-amber-500/10',
+        label: auctionState === 'waiting_host' ? 'RECOVERY WINDOW' : 'AUCTION PAUSED',
+      };
+    }
     if (secondsLeft > 15) {
       return {
         textColor: 'text-emerald-400',
@@ -62,7 +71,7 @@ export function CountdownRing() {
       bgGlow: 'bg-rose-500/10',
       label: 'FINAL CALL',
     };
-  }, [secondsLeft]);
+  }, [secondsLeft, auctionState]);
 
   // If the auction is complete or idle, don't show the timer ring
   if (auctionState === 'idle' || auctionState === 'complete') {
@@ -114,7 +123,7 @@ export function CountdownRing() {
             {secondsLeft}
           </span>
           <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-400 mt-0.5">
-            Seconds
+            {auctionState === 'paused' || auctionState === 'waiting_host' ? 'Frozen' : 'Seconds'}
           </span>
         </div>
       </div>
@@ -123,7 +132,9 @@ export function CountdownRing() {
       <div className="mt-2">
         <span
           className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border transition-all duration-300 ${
-            secondsLeft <= 5
+            auctionState === 'paused' || auctionState === 'waiting_host'
+              ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse'
+              : secondsLeft <= 5
               ? 'bg-rose-500/20 text-rose-400 border-rose-500/40 animate-bounce'
               : secondsLeft <= 15
               ? 'bg-amber-500/10 text-amber-300 border-amber-500/20'

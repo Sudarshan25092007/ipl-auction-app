@@ -58,6 +58,8 @@ interface AuctionState {
     | 'player_up'
     | 'bidding'
     | 'paused'
+    | 'waiting_host'
+    | 'terminated'
     | 'sold'
     | 'unsold'
     | 'complete';

@@ -56,8 +56,9 @@ export default function DashboardPage() {
   const [recentRooms, setRecentRooms] = useState<UserRoom[]>([]);
   const [isLoadingRooms, setIsLoadingRooms] = useState(true);
 
-  // Redirect to login if unauthenticated
+  // Redirect to login if unauthenticated and set document title
   useEffect(() => {
+    document.title = 'Manager Dashboard | IPL Mock Auction';
     if (!isLoading && !user) {
       router.push('/login');
     }
@@ -171,6 +172,14 @@ export default function DashboardPage() {
             >
               <span className="text-lg">⚡</span>
               <span>Dashboard</span>
+            </Link>
+
+            <Link
+              href="/history"
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 hover:border-slate-700/60 border border-transparent font-semibold text-sm transition-all"
+            >
+              <span className="text-lg">📜</span>
+              <span>History Ledger</span>
             </Link>
 
             <Link
@@ -426,6 +435,78 @@ export default function DashboardPage() {
                 })}
               </div>
             )}
+          </div>
+
+          {/* ─── 5. Arena Hub & Resource Directory ─────────────────────── */}
+          <div className="space-y-4 pt-4 border-t border-slate-800/60">
+            <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+              Arena Hub & Resources
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {/* Card A: Player Catalogue */}
+              <div className="bg-slate-900/60 border border-slate-800 backdrop-blur-md rounded-2xl p-6 flex flex-col justify-between hover:border-cyan-500/30 transition-all shadow-xl group">
+                <div className="space-y-2">
+                  <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-xl shadow-inner">
+                    📋
+                  </div>
+                  <h3 className="text-base font-bold text-white group-hover:text-cyan-400 transition-colors">
+                    Player Pool Catalogue
+                  </h3>
+                  <p className="text-slate-400 text-xs leading-relaxed">
+                    Inspect all 250+ players across Marquee, Batters, Pace, Spin, All-Rounders, and WKs with base prices.
+                  </p>
+                </div>
+                <Link
+                  href="/players"
+                  className="mt-5 inline-flex items-center gap-1.5 text-xs font-bold text-cyan-400 hover:text-cyan-300 transition-colors uppercase tracking-wider"
+                >
+                  Explore Pool <span>→</span>
+                </Link>
+              </div>
+
+              {/* Card B: Historical Ledger */}
+              <div className="bg-slate-900/60 border border-slate-800 backdrop-blur-md rounded-2xl p-6 flex flex-col justify-between hover:border-amber-500/30 transition-all shadow-xl group">
+                <div className="space-y-2">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl shadow-inner">
+                    🏛️
+                  </div>
+                  <h3 className="text-base font-bold text-white group-hover:text-amber-400 transition-colors">
+                    Historical Ledger
+                  </h3>
+                  <p className="text-slate-400 text-xs leading-relaxed">
+                    Review completed auctions, immutable squad snapshots, top marquee buys, and budget efficiency.
+                  </p>
+                </div>
+                <Link
+                  href="/history"
+                  className="mt-5 inline-flex items-center gap-1.5 text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors uppercase tracking-wider"
+                >
+                  View Archives <span>→</span>
+                </Link>
+              </div>
+
+              {/* Card C: League Rules & Engine */}
+              <div className="bg-slate-900/60 border border-slate-800 backdrop-blur-md rounded-2xl p-6 flex flex-col justify-between hover:border-emerald-500/30 transition-all shadow-xl group">
+                <div className="space-y-2">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl shadow-inner">
+                    ⚖️
+                  </div>
+                  <h3 className="text-base font-bold text-white group-hover:text-emerald-400 transition-colors">
+                    Auction Regulations
+                  </h3>
+                  <p className="text-slate-400 text-xs leading-relaxed">
+                    ₹120 Cr starting purse, dynamic scarcity pool sizing, 30s initial timer, and 10s reset on contested bids.
+                  </p>
+                </div>
+                <div className="mt-5 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Authoritative Engine
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </main>

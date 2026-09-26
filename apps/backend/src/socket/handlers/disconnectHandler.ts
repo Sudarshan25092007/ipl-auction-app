@@ -33,8 +33,11 @@ import type { Server } from 'socket.io';
 import type { AuthenticatedSocket } from '../middleware/socketAuth';
 import { redis } from '../../redis/client';
 import { REDIS_KEYS } from '../../redis/keys';
+import { getRoomByCode } from '../../db/queries/rooms';
+import { HostDeadManService } from '../../services/hostDeadManService';
+import { TeardownService } from '../../services/teardownService';
 
-const OFFLINE_GRACE_MS = 60_000; // 60 seconds before emitting user_left
+const OFFLINE_GRACE_MS = 60_000; // 60 seconds grace period
 
 /**
  * Register the disconnect handler for a specific socket.
@@ -48,6 +51,7 @@ export function registerDisconnectHandler(
 
   socket.on('disconnect', async (reason) => {
     const roomCode = socket.data.roomCode;
+    const roomId = socket.data.roomId;
 
     console.info(
       `[Disconnect] ${username} disconnected. Reason: ${reason}. Room: ${roomCode ?? 'none'}`
@@ -56,7 +60,6 @@ export function registerDisconnectHandler(
     if (!roomCode) return; // User disconnected before joining a room
 
     // Mark user as offline in Redis presence hash.
-    // Wrapped in try/catch — Redis outage must never throw in the disconnect path.
     try {
       await redis.hset(REDIS_KEYS.presence(roomCode), userId, '0');
     } catch (redisErr) {
@@ -66,10 +69,33 @@ export function registerDisconnectHandler(
       );
     }
 
-    // Deferred emit: only announce user_left if still offline after 60s
+    // Broadcast immediate presence alert to the auction room
+    io.to(roomCode).emit('auction:presence_alert', {
+      userId,
+      username,
+      franchise: socket.data.franchise || null,
+      isAway: true,
+      reason: 'disconnected',
+      timestamp: Date.now(),
+    });
+
+    try {
+      const { getRoomByIdOrCode } = await import('../../db/queries/rooms');
+      const room = await getRoomByIdOrCode(roomId || roomCode);
+      if (!room) return;
+
+      // ── Host Dead Man's Switch ──
+      // If host disconnected during active auction, freeze timer & start 60s recovery window immediately
+      if (room.host_user_id === userId && room.status === 'active') {
+        await HostDeadManService.handleHostDisconnect(room.id, userId, io);
+      }
+    } catch (err) {
+      console.error('[DisconnectHandler] Error during host disconnect check:', err);
+    }
+
+    // Deferred teardown / user_left check
     setTimeout(async () => {
       try {
-        // Check current presence status
         const presenceValue = await redis.hget(
           REDIS_KEYS.presence(roomCode),
           userId
@@ -78,15 +104,14 @@ export function registerDisconnectHandler(
         // presenceValue === '1' means they reconnected — do nothing
         if (presenceValue !== '0') return;
 
-        // Still offline after 60s — broadcast to room
-        io.to(roomCode).emit('room:user_left', {
-          userId,
+        // If still offline, execute authoritative teardown
+        await TeardownService.teardownManager(roomCode, userId, io, {
           username,
-          message: `${username} has left the room.`,
+          reason: 'disconnect_timeout',
         });
 
         console.info(
-          `[Disconnect] ${username} confirmed offline after 60s grace period.`
+          `[Disconnect] ${username} confirmed offline after 60s grace period. Teardown executed.`
         );
       } catch (err) {
         console.warn(

@@ -19,6 +19,10 @@ export default function PlayersPage() {
   const [selectedNationality, setSelectedNationality] = useState<string>('all');
 
   useEffect(() => {
+    document.title = 'Player Catalogue | IPL Mock Auction';
+  }, []);
+
+  useEffect(() => {
     async function loadPlayers() {
       try {
         const data = await getPlayers();

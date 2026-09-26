@@ -113,15 +113,32 @@ export async function getRoomByCode(
   return result.rows[0] ?? null;
 }
 
+export function isUUID(str: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+}
+
 /**
  * Find a room by its UUID. Used for host verification.
  */
 export async function getRoomById(roomId: string): Promise<RoomRow | null> {
+  if (!roomId || !isUUID(roomId)) return null;
   const result = await pool.query<RoomRow>(
     `SELECT * FROM rooms WHERE id = $1 LIMIT 1`,
     [roomId]
   );
   return result.rows[0] ?? null;
+}
+
+/**
+ * Find a room by either its UUID or its 6-character invite code.
+ */
+export async function getRoomByIdOrCode(idOrCode: string): Promise<RoomRow | null> {
+  if (!idOrCode) return null;
+  if (isUUID(idOrCode)) {
+    const room = await getRoomById(idOrCode);
+    if (room) return room;
+  }
+  return getRoomByCode(idOrCode);
 }
 
 /**
@@ -196,6 +213,125 @@ export async function isRoomMember(
     [roomId, userId]
   );
   return result.rows[0]?.exists ?? false;
+}
+
+/**
+ * Remove a member from a room.
+ * If the user is the room host and other members remain in the lobby, transfers host to the oldest joined member.
+ * Safe and idempotent.
+ */
+export async function removeMemberFromRoom(
+  roomId: string,
+  userId: string
+): Promise<{
+  wasRemoved: boolean;
+  franchise: string | null;
+  wasHost: boolean;
+  newHostUserId: string | null;
+  remainingMemberCount: number;
+}> {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // 1. Get room details
+    const roomRes = await client.query<RoomRow>(
+      `SELECT * FROM rooms WHERE id = $1 FOR UPDATE`,
+      [roomId]
+    );
+    if (!roomRes.rows[0]) {
+      await client.query('ROLLBACK');
+      return {
+        wasRemoved: false,
+        franchise: null,
+        wasHost: false,
+        newHostUserId: null,
+        remainingMemberCount: 0,
+      };
+    }
+    const room = roomRes.rows[0];
+    const wasHost = room.host_user_id === userId;
+
+    // 2. Get member details
+    const memberRes = await client.query<RoomMemberRow>(
+      `SELECT * FROM room_members WHERE room_id = $1 AND user_id = $2 FOR UPDATE`,
+      [roomId, userId]
+    );
+    if (!memberRes.rows[0]) {
+      await client.query('ROLLBACK');
+      const countRes = await client.query<{ count: string }>(
+        `SELECT COUNT(*) FROM room_members WHERE room_id = $1`,
+        [roomId]
+      );
+      return {
+        wasRemoved: false,
+        franchise: null,
+        wasHost,
+        newHostUserId: null,
+        remainingMemberCount: parseInt(countRes.rows[0]?.count ?? '0', 10),
+      };
+    }
+    const member = memberRes.rows[0];
+
+    // 3. If in lobby state, delete membership so franchise/slot is freed
+    if (room.status === 'lobby') {
+      await client.query(
+        `DELETE FROM room_members WHERE room_id = $1 AND user_id = $2`,
+        [roomId, userId]
+      );
+    }
+
+    // 4. Handle host reassignment if host left and room is in lobby
+    let newHostUserId: string | null = null;
+    if (wasHost && room.status === 'lobby') {
+      const nextMemberRes = await client.query<{ user_id: string }>(
+        `SELECT user_id FROM room_members WHERE room_id = $1 ORDER BY joined_at ASC LIMIT 1`,
+        [roomId]
+      );
+      if (nextMemberRes.rows[0]) {
+        newHostUserId = nextMemberRes.rows[0].user_id;
+        await client.query(
+          `UPDATE rooms SET host_user_id = $1, updated_at = NOW() WHERE id = $2`,
+          [newHostUserId, roomId]
+        );
+      }
+    }
+
+    // 5. Get remaining member count
+    const countRes = await client.query<{ count: string }>(
+      `SELECT COUNT(*) FROM room_members WHERE room_id = $1`,
+      [roomId]
+    );
+    const remainingMemberCount = parseInt(countRes.rows[0]?.count ?? '0', 10);
+
+    await client.query('COMMIT');
+
+    return {
+      wasRemoved: true,
+      franchise: member.franchise,
+      wasHost,
+      newHostUserId,
+      remainingMemberCount,
+    };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Update room host explicitly.
+ */
+export async function updateRoomHost(
+  roomId: string,
+  newHostUserId: string
+): Promise<void> {
+  await pool.query(
+    `UPDATE rooms SET host_user_id = $1, updated_at = NOW() WHERE id = $2`,
+    [newHostUserId, roomId]
+  );
 }
 
 /**
