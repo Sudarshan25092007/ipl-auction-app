@@ -326,14 +326,7 @@ The platform provides durable post-auction record-keeping via `/history`:
 ## 🗄️ Database & Redis Schema
 
 ### PostgreSQL Core Tables
-* **`users`**: User accounts (`id UUID PK`, `email UNIQUE`, `username`, `password_hash`, `created_at`).
-* **`rooms`**: Auction rooms (`id UUID PK`, `invite_code CHAR(6) UNIQUE`, `host_user_id FK`, `status`, `current_queue_position`, `created_at`, `updated_at`). Status enum check: `('lobby', 'active', 'completed', 'waiting_host', 'terminated')`.
-* **`room_members`**: Franchise ownership & purse (`id UUID PK`, `room_id FK`, `user_id FK`, `franchise`, `wallet_remaining_lakhs`, `joined_at`). Unique constraints: `UNIQUE(room_id, user_id)` and `UNIQUE NULLS NOT DISTINCT (room_id, franchise)`.
-* **`players`**: 250-player catalog (`id UUID PK`, `name UNIQUE`, `category`, `role`, `nationality`, `is_marquee`, `is_capped`, `base_price_lakhs`).
-* **`auction_queue`**: Ordered draft queue per room (`id UUID PK`, `room_id FK`, `player_id FK`, `position`, `phase`, `status`). Unique constraints: `UNIQUE(room_id, position)` and `UNIQUE(room_id, player_id)`.
-* **`bids`**: Audit trail of every bid (`id UUID PK`, `room_id FK`, `player_id FK`, `room_member_id FK`, `amount_lakhs`, `is_winning_bid`, `placed_at`).
-* **`squad_players`**: Final team acquisitions (`id UUID PK`, `room_member_id FK`, `player_id FK`, `price_paid_lakhs`, `acquired_at`). Unique constraint: `UNIQUE(room_member_id, player_id)`.
-* **`bid_events`**: Append-only event stream (`id UUID PK`, `room_id FK`, `player_id`, `user_id`, `event_type`, `payload JSONB`, `created_at`).
+![Schema Tables](apps/backend/src/db/IPL-DB-TABLES.png)
 
 ### Redis Key Registry
 All Redis key patterns are centralized in `apps/backend/src/redis/keys.ts`:
